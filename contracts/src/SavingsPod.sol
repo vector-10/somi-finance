@@ -7,41 +7,20 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/**
- * @title SavingsPod
- * @dev Group savings contract where users pool funds together for higher APY rewards
- * @notice Users can create pods, invite others, and earn boosted interest rates
- * @author Somi Finance Team
- */
+
 contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
     using SafeERC20 for IERC20;
 
-    // ============ CONSTANTS & ROLES ============
-    
-    /// @dev Role for pod management and system administration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    
-    /// @dev Role for emergency actions
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
-    
-    /// @dev Maximum members allowed in a single pod
+
     uint256 public constant MAX_POD_MEMBERS = 20;
-    
-    /// @dev Minimum deposit required to create or join a pod
-    uint256 public constant MIN_POD_DEPOSIT = 100e6; // $100 USDC equivalent
-    
-    /// @dev Base APY boost percentage (in basis points)
-    uint256 public constant BASE_APY_BOOST = 50; // 0.5%
-    
-    /// @dev Maximum APY boost achievable (in basis points)
-    uint256 public constant MAX_APY_BOOST = 500; // 5%
-    
-    /// @dev Basis points denominator
+    uint256 public constant MIN_POD_DEPOSIT = 100e6; 
+    uint256 public constant BASE_APY_BOOST = 50; 
+    uint256 public constant MAX_APY_BOOST = 500; 
     uint256 public constant BASIS_POINTS = 10000;
 
-    // ============ STRUCTS ============
-    
-    /// @dev Pod information structure
+
     struct Pod {
         uint256 id;                    // Unique pod identifier
         string name;                   // Pod display name
@@ -67,41 +46,27 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         bool isUsed;                 // Whether invitation was used
     }
 
-    // ============ STATE VARIABLES ============
-    
-    /// @dev Reference to the main SavingsPool contract
+
     address public savingsPool;
     
-    /// @dev Next pod ID to assign
     uint256 public nextPodId = 1;
     
-    /// @dev Mapping of pod ID to Pod struct
     mapping(uint256 => Pod) public pods;
-    
-    /// @dev Mapping of user address to their active pod IDs
     mapping(address => uint256[]) public userPods;
-    
-    /// @dev Mapping of invitation hash to invitation details
     mapping(bytes32 => Invitation) public invitations;
-    
-    /// @dev Mapping of user address to pods they've been invited to
     mapping(address => uint256[]) public pendingInvitations;
     
-    /// @dev Array of all active pod IDs for iteration
+
     uint256[] public activePodIds;
     
-    /// @dev Mapping to check if pod ID is in activePodIds array
+
     mapping(uint256 => bool) public isPodActive;
     
-    /// @dev Pod leaderboard - top performing pods
+
     uint256[] public topPods;
-    
-    /// @dev Maximum number of pods shown on leaderboard
     uint256 public constant LEADERBOARD_SIZE = 10;
 
-    // ============ EVENTS ============
-    
-    /// @dev Emitted when a new pod is created
+
     event PodCreated(
         uint256 indexed podId,
         address indexed leader,
@@ -110,8 +75,7 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         bool isPrivate,
         uint256 minimumDeposit
     );
-    
-    /// @dev Emitted when user joins a pod
+
     event MemberJoined(
         uint256 indexed podId,
         address indexed member,
@@ -119,7 +83,7 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         uint256 newPodTotal
     );
     
-    /// @dev Emitted when user leaves a pod
+
     event MemberLeft(
         uint256 indexed podId,
         address indexed member,
@@ -127,7 +91,6 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         uint256 newPodTotal
     );
     
-    /// @dev Emitted when pod APY boost is updated
     event APYBoostUpdated(
         uint256 indexed podId,
         uint256 oldBoost,
@@ -136,7 +99,7 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         uint256 totalDeposits
     );
     
-    /// @dev Emitted when invitation is sent
+
     event InvitationSent(
         uint256 indexed podId,
         address indexed inviter,
@@ -144,14 +107,13 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         uint256 expiresAt
     );
     
-    /// @dev Emitted when invitation is accepted
     event InvitationAccepted(
         uint256 indexed podId,
         address indexed invitee,
         address indexed inviter
     );
     
-    /// @dev Emitted when pod is dissolved
+
     event PodDissolved(
         uint256 indexed podId,
         address indexed leader,
@@ -159,21 +121,18 @@ contract SavingsPod is ReentrancyGuard, Pausable, AccessControl {
         uint256 memberCount
     );
 
-    // ============ MODIFIERS ============
-    
-    /// @dev Ensures the caller is a member of the specified pod
+
     modifier onlyPodMember(uint256 podId) {
         require(pods[podId].isMember[msg.sender], "Not a pod member");
         _;
     }
     
-    /// @dev Ensures the caller is the leader of the specified pod
+
     modifier onlyPodLeader(uint256 podId) {
         require(pods[podId].leader == msg.sender, "Not the pod leader");
         _;
     }
     
-    /// @dev Ensures the pod exists and is active
     modifier podExists(uint256 podId) {
         require(podId > 0 && podId < nextPodId, "Pod does not exist");
         require(pods[podId].isActive, "Pod is not active");
