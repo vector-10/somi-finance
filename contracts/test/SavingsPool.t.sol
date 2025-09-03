@@ -23,18 +23,15 @@ contract SavingsPoolTest is Test {
         vm.deal(admin, 100 ether);
         vm.deal(user, 100 ether);
 
-        // Deploy Mock USDC (6 decimals)
-        mockUSDC = new MockERC20("Mock USDC", "mUSDC", 6, initialMint);
-
-        // Deploy SavingsPool
         vm.startPrank(admin);
-        savingsPool = new SavingsPool(treasury);
 
-        // Add mockUSDC as supported token
+        mockUSDC = new MockERC20("Mock USDC", "mUSDC", 6, initialMint);
+        
+        savingsPool = new SavingsPool(treasury);
         savingsPool.addSupportedToken(address(mockUSDC), apr, priceFeed);
 
         // Transfer some mock USDC to user
-        mockUSDC.mint(user, userDeposit);
+        mockUSDC.transfer   (user, userDeposit);
         vm.stopPrank();
     }
 

@@ -114,12 +114,17 @@ contract InterestCalculatorTest is Test {
         assertEq(interest, 50e18, "One year simple interest calculation failed");
     }
 
-    function testSimpleInterestPartialTime() public {
-        // 1,000 * 12% for 90 days
-        uint256 interest = calculator.calculateSimpleInterest(PRINCIPAL, RATE_12_PERCENT, 90 days);
-        uint256 expected = 29_589041095890410958e16; // Approximately 29.59
+    function test_SimpleInterest_PartialTime() public {
+        uint256 interest = InterestCalculator.calculateSimpleInterest(
+            1000e18,
+            1200,
+            90 days
+        );
+        uint256 expected = 29589041095890410958;
         assertApproxEqAbs(interest, expected, 1e12);
     }
+
+
 
     // --------------------------------------------------
     // 2. Compound Interest Tests

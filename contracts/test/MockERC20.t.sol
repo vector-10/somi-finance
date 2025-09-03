@@ -38,10 +38,12 @@ contract MockERC20Test is Test {
         assertEq(token.totalSupply(), 1_000_500e6);
     }
 
-    function testFail_MintNotOwner() public {
+    function test_RevertWhen_MintCalledByNonOwner() public {
         vm.prank(alice);
+        vm.expectRevert("Ownable: caller is not the owner");
         token.mint(bob, 1);
     }
+
 
     function test_ApproveAndTransferFrom() public {
         vm.prank(alice);

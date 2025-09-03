@@ -13,10 +13,14 @@ contract MockERC20 is ERC20, Ownable {
         string memory symbol,
         uint8 decimals_,
         uint256 initialSupply
-    ) ERC20(name, symbol) Ownable(msg.sender) {
+    )
+        ERC20(name, symbol)
+        Ownable() 
+    {
         _decimals = decimals_;
         _mint(msg.sender, initialSupply);
     }
+
 
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
