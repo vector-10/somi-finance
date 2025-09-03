@@ -1,4 +1,5 @@
 [profile.default]
+ignored_error_codes = ["2018"]
 src = "src"
 out = "out"
 libs = ["lib"]
