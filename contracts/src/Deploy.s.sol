@@ -25,7 +25,6 @@ contract DeployScript is Script {
     address public constant WETH_PRICE_FEED = 0x7890123456789012345678901234567890123456;
     address public constant SOM_PRICE_FEED = 0x8901234567890123456789012345678901234567;
 
-
     SavingsPool public savingsPool;
     SavingsPod public savingsPod;
     CertificateNFT public certificateNFT;
@@ -39,7 +38,6 @@ contract DeployScript is Script {
         
         vm.startBroadcast(deployerPrivateKey);
         
-        deployAccessManager();
         deployPriceFeedManager();
         deployRandomnessProvider();
         deployCreditScore();
@@ -55,12 +53,6 @@ contract DeployScript is Script {
         
         logDeployedAddresses();
         saveDeploymentInfo();
-    }
-
-    function deployAccessManager() internal {
-        console.log("Deploying AccessManager...");
-        accessManager = new AccessManager(TREASURY);
-        console.log("AccessManager deployed at:", address(accessManager));
     }
 
     function deployPriceFeedManager() internal {
@@ -106,30 +98,7 @@ contract DeployScript is Script {
     function setupRoles() internal {
         console.log("Setting up roles...");
         
-        accessManager.grantRoleWithDescription(
-            accessManager.MINTER_ROLE(),
-            address(savingsPool),
-            "SavingsPool minting permissions"
-        );
-        
-        accessManager.grantRoleWithDescription(
-            accessManager.MINTER_ROLE(),
-            address(savingsPod),
-            "SavingsPod minting permissions"
-        );
-        
-        accessManager.grantRoleWithDescription(
-            accessManager.UPDATER_ROLE(),
-            address(savingsPool),
-            "SavingsPool update permissions"
-        );
-        
-        accessManager.grantRoleWithDescription(
-            accessManager.UPDATER_ROLE(),
-            address(savingsPod),
-            "SavingsPod update permissions"
-        );
-        
+        // Grant roles using OpenZeppelin's AccessControl (built into contracts)
         certificateNFT.grantRole(certificateNFT.MINTER_ROLE(), address(savingsPool));
         certificateNFT.grantRole(certificateNFT.MINTER_ROLE(), address(savingsPod));
         certificateNFT.grantRole(certificateNFT.UPDATER_ROLE(), address(savingsPool));
@@ -179,9 +148,9 @@ contract DeployScript is Script {
     function setupTokenSupport() internal {
         console.log("Setting up supported tokens...");
         
-        savingsPool.addSupportedToken(USDC_SOMNIA, 500);
-        savingsPool.addSupportedToken(WETH_SOMNIA, 400);
-        savingsPool.addSupportedToken(SOM_SOMNIA, 600);
+        savingsPool.addSupportedToken(USDC_SOMNIA, 500, USDC_PRICE_FEED);
+        savingsPool.addSupportedToken(WETH_SOMNIA, 400, WETH_PRICE_FEED);
+        savingsPool.addSupportedToken(SOM_SOMNIA, 600, SOM_PRICE_FEED);
     }
 
     function logDeployedAddresses() internal view {
@@ -190,7 +159,6 @@ contract DeployScript is Script {
         console.log("Deployer:", msg.sender);
         console.log("Treasury:", TREASURY);
         console.log("\n=== CONTRACT ADDRESSES ===");
-        console.log("AccessManager:", address(accessManager));
         console.log("SavingsPool:", address(savingsPool));
         console.log("SavingsPod:", address(savingsPod));
         console.log("CertificateNFT:", address(certificateNFT));
@@ -216,7 +184,6 @@ contract DeployScript is Script {
                 '  "deployer": "', vm.toString(msg.sender), '",\n',
                 '  "treasury": "', vm.toString(TREASURY), '",\n',
                 '  "contracts": {\n',
-                '    "AccessManager": "', vm.toString(address(accessManager)), '",\n',
                 '    "SavingsPool": "', vm.toString(address(savingsPool)), '",\n',
                 '    "SavingsPod": "', vm.toString(address(savingsPod)), '",\n',
                 '    "CertificateNFT": "', vm.toString(address(certificateNFT)), '",\n',
@@ -240,7 +207,6 @@ contract DeployScript is Script {
     function deployForTesting() external {
         vm.startBroadcast();
         
-        deployAccessManager();
         deployPriceFeedManager();
         deployRandomnessProvider();
         deployCreditScore();

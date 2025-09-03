@@ -201,7 +201,7 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl {
         return super.supportsInterface(interfaceId);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721) {
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
     super._burn(tokenId);
 }
 }
