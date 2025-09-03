@@ -24,6 +24,10 @@ contract SavingsPoolTest is Test {
         vm.deal(user, 100 ether);
 
         vm.startPrank(admin);
+        uint256 yieldAmount = 100_000e6;
+        mockUSDC.mint(admin, yieldAmount);
+        mockUSDC.approve(address(savingsPool), yieldAmount);
+        savingsPool.fundYieldReserve(address(mockUSDC), yieldAmount);
 
         mockUSDC = new MockERC20("Mock USDC", "mUSDC", 6, initialMint);
         

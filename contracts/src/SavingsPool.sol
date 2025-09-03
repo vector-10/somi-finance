@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// ---------------------------
-// OpenZeppelin imports
-// ---------------------------
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,14 +8,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-// ---------------------------
-// Internal library import
-// ---------------------------
 import "./InterestCalculator.sol";
 
-// ---------------------------
-// Optional price feed interface (Chainlink-compatible: Protofire/DIA)
-// ---------------------------
+
 interface IPriceFeed {
     function latestAnswer() external view returns (int256);
 }
@@ -26,47 +18,28 @@ interface IPriceFeed {
 contract SavingsPool is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // ---------------------------
-    // Roles
-    // ---------------------------
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
 
-    // ---------------------------
-    // Constants
-    // ---------------------------
     uint256 public constant BASIS_POINTS = 10000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
 
-    // ---------------------------
-    // State variables
-    // ---------------------------
 
-    // Supported tokens → true/false
     mapping(address => bool) public supportedTokens;
-
-    // Per-token interest rates in basis points (e.g., 500 = 5% APR)
     mapping(address => uint256) public interestRates;
+    mapping(address => uint256) public yieldReserves;
 
-    // User balances per token (principal only)
     mapping(address => mapping(address => uint256)) public balances;
-
-    // Last claim timestamp per user per token
     mapping(address => mapping(address => uint256)) public lastClaimTime;
 
-    // Total deposits per token
+
     mapping(address => uint256) public totalDeposits;
 
-    // Protocol fee on interest, in basis points
-    uint256 public protocolFee = 100; // 1% default
-
-    // Treasury wallet for collecting fees
+    uint256 public protocolFee = 100; 
     address public treasury;
 
-    // Collected fees per token
     mapping(address => uint256) public protocolFeesCollected;
 
-    // Optional: Chainlink/Protofire price feeds per token
     mapping(address => address) public priceFeeds;
 
     // ---------------------------
@@ -238,20 +211,8 @@ contract SavingsPool is AccessControl, Pausable, ReentrancyGuard {
 
         if (interest > 0) {
             // Mint tokens if mock token supports it
-            try IERC20Metadata(token).decimals() returns (uint8) {
-                // If the token has a mint() function, call it
-                // (works for testnet mock tokens)
-                (bool success, ) = token.call(
-                    abi.encodeWithSignature("mint(address,uint256)", address(this), interest)
-                );
-                require(success, "Mint failed");
-            } catch {
-                // Otherwise, assume we pre-funded the pool for interest
-                require(
-                    IERC20(token).balanceOf(address(this)) >= interest,
-                    "Insufficient reserve"
-                );
-            }
+            require(yieldReserves[token] >= interest, "Insufficient yield reserves");
+            yieldReserves[token] -= interest;
 
             // Deduct protocol fee
             uint256 fee = (interest * protocolFee) / BASIS_POINTS;
@@ -264,6 +225,11 @@ contract SavingsPool is AccessControl, Pausable, ReentrancyGuard {
             lastClaimTime[user][token] = block.timestamp;
         }
     }
+
+        function fundYieldReserve(address token, uint256 amount) external onlyRole(ADMIN_ROLE) {
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        yieldReserves[token] += amount;
+        }
 
     // ---------------------------
     // Oracle Helpers
