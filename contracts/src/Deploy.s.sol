@@ -9,7 +9,6 @@ import "../src/InterestCalculator.sol";
 import "../src/PriceFeedManager.sol";
 import "../src/RandomnessProvider.sol";
 import "../src/CreditScore.sol";
-import "../src/AccessManager.sol";
 
 contract DeployScript is Script {
     address public constant TREASURY = 0x1234567890123456789012345678901234567890;
@@ -26,7 +25,7 @@ contract DeployScript is Script {
     address public constant WETH_PRICE_FEED = 0x7890123456789012345678901234567890123456;
     address public constant SOM_PRICE_FEED = 0x8901234567890123456789012345678901234567;
 
-    AccessManager public accessManager;
+
     SavingsPool public savingsPool;
     SavingsPod public savingsPod;
     CertificateNFT public certificateNFT;
