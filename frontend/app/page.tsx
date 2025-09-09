@@ -63,7 +63,7 @@ export default function SomiFinanceLanding() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link href="/app" className="hidden md:block rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">App</Link>
+            <Link href="/app" className="hidden md:block rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">App</Link>
             
             {/* Mobile menu button */}
             <button
@@ -97,7 +97,7 @@ export default function SomiFinanceLanding() {
                 <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">Features</a>
                 <a href="#how" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">How it works</a>
                 <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">FAQ</a>
-                <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="block mt-6 rounded-lg bg-purple-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-purple-700">Launch App</Link>
+                <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="block mt-6 rounded-md bg-purple-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-purple-700">Launch App</Link>
               </nav>
             </div>
           </div>
@@ -118,10 +118,10 @@ export default function SomiFinanceLanding() {
               Somi Finance is a non-custodial savings layer on Somnia. Deposit tokens, earn on-chain yield, and keep full control of your assets.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
+              <Link href="/app" className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
                 Launch App <Icon.ArrowRight className="h-4 w-4" />
               </Link>
-              <a href="#features" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
+              <a href="#features" className="rounded-md border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
             </div>
             <div className="flex items-center gap-6 pt-2 text-white/70">
               <div className="flex items-center gap-2"><Icon.Shield className="h-4 w-4"/> Open-source</div>
