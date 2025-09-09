@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-// Standalone landing page: no external UI libs, only Next + Tailwind.
-// Name: SomiFinanceLanding (export default below)
 
-// --- Minimal inline icons (no deps) ---
 const Icon = {
   ArrowRight: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
