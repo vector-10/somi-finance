@@ -1,29 +1,48 @@
+"use client"
 import Link from "next/link";
+import { useState } from "react";
 
 const Icon = {
+  Menu: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
+      <path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/>
+    </svg>
+  ),
+  X: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
+      <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+    </svg>
+  ),
   ArrowRight: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
-      <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+      <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+    </svg>
   ),
   Shield: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
   ),
   Chart: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
-      <path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12" y="8" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="13" rx="1"/></svg>
+      <path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12" y="8" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="13" rx="1"/>
+    </svg>
   ),
   Lock: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
-      <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
   ),
   Wallet: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={props.className}>
-      <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M16 11h4"/><path d="M3 7V5a2 2 0 0 1 2-2h10"/></svg>
+      <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M16 11h4"/><path d="M3 7V5a2 2 0 0 1 2-2h10"/>
+    </svg>
   ),
 };
 
 export default function SomiFinanceLanding() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="relative min-h-screen text-white bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(107,70,193,0.25),transparent),radial-gradient(40%_30%_at_100%_10%,rgba(59,130,246,0.18),transparent)]">
       {/* Grid overlay */}
@@ -44,17 +63,53 @@ export default function SomiFinanceLanding() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link href="/app" className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">App</Link>
+            <Link href="/app" className="hidden md:block rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">App</Link>
+            
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg"
+            >
+              {isMobileMenuOpen ? (
+                <Icon.X className="h-6 w-6" />
+              ) : (
+                <Icon.Menu className="h-6 w-6" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="fixed right-0 top-0 h-full w-64 bg-slate-900/95 backdrop-blur-lg border-l border-white/10 p-6">
+              <div className="flex items-center justify-between mb-8">
+                <span className="bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200 bg-clip-text font-bold tracking-tight text-transparent">Menu</span>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 text-white hover:bg-white/10 rounded-lg"
+                >
+                  <Icon.X className="h-6 w-6" />
+                </button>
+              </div>
+              <nav className="space-y-4">
+                <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">Features</a>
+                <a href="#how" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">How it works</a>
+                <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">FAQ</a>
+                <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="block mt-6 rounded-lg bg-purple-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-purple-700">Launch App</Link>
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-7xl px-4 pt-20 md:pt-[10rem]">
+      <section className="relative mx-auto max-w-7xl px-4 pt-16 md:pt-24">
         <div className="grid items-center gap-10 md:grid-cols-2">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
-              <Icon.Wallet className="h-4 w-4" /> Built for Somnia Ecosystem
+              <Icon.Wallet className="h-4 w-4" /> Built for Somnia Testnet
             </span>
             <h1 className="text-balance text-4xl font-extrabold tracking-tight md:text-6xl">
               Save. Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200">Stay Liquid.</span>
@@ -68,7 +123,7 @@ export default function SomiFinanceLanding() {
               </Link>
               <a href="#features" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
             </div>
-            <div className="flex flex-col md:flex-row gap-6 pt-2 text-white/70">
+            <div className="flex items-center gap-6 pt-2 text-white/70">
               <div className="flex items-center gap-2"><Icon.Shield className="h-4 w-4"/> Open-source</div>
               <div className="flex items-center gap-2"><Icon.Lock className="h-4 w-4"/> Self-custody</div>
               <div className="flex items-center gap-2"><Icon.Chart className="h-4 w-4"/> Transparent APY</div>
