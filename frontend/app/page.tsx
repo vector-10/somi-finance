@@ -69,7 +69,7 @@ export default function SomiFinanceLanding() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link href="/app" className="hidden md:block rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">App</Link>
+            <Link href="/app" className="hidden md:flex items-center rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">Savings Plans <Icon.ArrowRight className="h-4 w-4 font-bold" /></Link>
             
             {/* Mobile menu button */}
             <button
@@ -89,7 +89,7 @@ export default function SomiFinanceLanding() {
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-            <div className="fixed right-0 top-0 h-full w-[60%] bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900 border-l border-white/20 p-6 flex flex-col shadow-2xl">
+            <div className="fixed right-0 top-0 h-full w-[60%] bg-slate-900 border-l border-white/20 p-6 flex flex-col shadow-2xl">
               <div className="flex items-center justify-between mb-8">
                 <span className="bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200 bg-clip-text font-bold tracking-tight text-transparent">Menu</span>
                 <button
@@ -115,7 +115,7 @@ export default function SomiFinanceLanding() {
       </header>
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-7xl px-4 pt-16 md:pt-24">
+      <section className="relative mx-auto max-w-7xl px-4 pt-22 md:pt-30">
         <div className="grid items-center gap-10 md:grid-cols-2">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
@@ -125,7 +125,7 @@ export default function SomiFinanceLanding() {
               Save. Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200">Stay Liquid.</span>
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-white/80">
-              Somi Finance is a non-custodial savings layer on Somnia. Deposit tokens, earn on-chain yield, and keep full control of your assets.
+              Somi Finance is the First non-custodial savings Protocol built to Leverage Somnia's high-speed L1 Blockchain. <br /> Deposit tokens, earn yields and stay liquid.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
@@ -133,8 +133,8 @@ export default function SomiFinanceLanding() {
               </Link>
               <a href="#features" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
             </div>
-            <div className="flex items-center gap-6 pt-2 text-white/70">
-              <div className="flex items-center gap-2"><Icon.Shield className="h-4 w-4"/> Open-source</div>
+            <div className="flex flex-col md:flex-row font-bold gap-6 pt-2 text-white/70">
+              <div className="flex items-center gap-2"><Icon.Shield className="h-4 w-4"/> Enterprise Security</div>
               <div className="flex items-center gap-2"><Icon.Lock className="h-4 w-4"/> Self-custody</div>
               <div className="flex items-center gap-2"><Icon.Chart className="h-4 w-4"/> Transparent APY</div>
             </div>
@@ -148,12 +148,12 @@ export default function SomiFinanceLanding() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-white">
                 <div className="rounded-md border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm text-white/70">Total Supply</div>
+                  <div className="text-sm text-white/70">Total Reward Supply</div>
                   <div className="text-2xl font-semibold">1,000,000 mUSDC</div>
                 </div>
                 <div className="rounded-md border border-white/10 bg-white/5 p-4">
                   <div className="text-sm text-white/70">APY (demo)</div>
-                  <div className="text-2xl font-semibold">5.0%</div>
+                  <div className="text-2xl font-semibold">15.0%</div>
                 </div>
                 <div className="rounded-md border border-white/10 bg-white/5 p-4">
                   <div className="text-sm text-white/70">Depositors</div>
@@ -173,15 +173,15 @@ export default function SomiFinanceLanding() {
       {/* Features */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-20">
         <div className="mb-10 flex items-end justify-between">
-          <h2 className="text-2xl font-bold md:text-3xl">Why Somi Finance</h2>
-          <a href="/docs" className="text-sm text-purple-300 hover:text-purple-200">Read the docs →</a>
+          <h2 className="text-2xl font-bold md:text-3xl">Why Somi Finance?</h2>
+          <a href="/docs" className="text-sm text-purple-300 hover:text-purple-200">Read Below</a>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[{icon:<Icon.Chart className="h-5 w-5"/>,t:"Real-time yield",d:"Transparent accounting and share-based accruals."},
-            {icon:<Icon.Shield className="h-5 w-5"/>,t:"Open-source contracts",d:"Verifiable Solidity with public addresses."},
+            {icon:<Icon.Chart className="h-5 w-5"/>,t:"Savings Pods",d:"Pool Resources together with Friends to earn more Yields on deposits."},
+            {icon:<Icon.Shield className="h-5 w-5"/>,t:"Secure Yield Contracts",d:"Verifiable with public addresses."},
             {icon:<Icon.Lock className="h-5 w-5"/>,t:"Self-custody",d:"You keep the keys. Deposit/withdraw anytime."},
-            {icon:<Icon.Wallet className="h-5 w-5"/>,t:"Fast settlement",d:"Somnia RPC keeps interactions snappy."},
-            {icon:<Icon.Chart className="h-5 w-5"/>,t:"Composability",d:"ERC-20 shares and clean interfaces."},
+            {icon:<Icon.Wallet className="h-5 w-5"/>,t:"Fast settlement",d:"Somnia RPC keeps interactions lightning fast."},
             {icon:<Icon.ArrowRight className="h-5 w-5"/>,t:"Simple UX",d:"Deposit, track, withdraw—no noise."}]
             .map((f, i) => (
               <div key={i} className="h-full rounded-md border border-white/10 bg-white/5 p-6 backdrop-blur transition hover:bg-white/10">
