@@ -50,11 +50,11 @@ export default function SomiFinanceLanding() {
       </header>
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-7xl px-4 pt-16 md:pt-24">
+      <section className="relative mx-auto max-w-7xl px-4 pt-20 md:pt-[10rem]">
         <div className="grid items-center gap-10 md:grid-cols-2">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
-              <Icon.Wallet className="h-4 w-4" /> Built for Somnia Testnet
+              <Icon.Wallet className="h-4 w-4" /> Built for Somnia Ecosystem
             </span>
             <h1 className="text-balance text-4xl font-extrabold tracking-tight md:text-6xl">
               Save. Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200">Stay Liquid.</span>
@@ -68,7 +68,7 @@ export default function SomiFinanceLanding() {
               </Link>
               <a href="#features" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
             </div>
-            <div className="flex items-center gap-6 pt-2 text-white/70">
+            <div className="flex flex-col md:flex-row gap-6 pt-2 text-white/70">
               <div className="flex items-center gap-2"><Icon.Shield className="h-4 w-4"/> Open-source</div>
               <div className="flex items-center gap-2"><Icon.Lock className="h-4 w-4"/> Self-custody</div>
               <div className="flex items-center gap-2"><Icon.Chart className="h-4 w-4"/> Transparent APY</div>
