@@ -84,35 +84,50 @@ export default function SomiFinanceLanding() {
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile menu overlay */}
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-            <div className="fixed right-0 top-0 h-full w-[60%] bg-slate-900 border-l border-white/20 p-6 flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <span className="bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200 bg-clip-text font-bold tracking-tight text-transparent">Menu</span>
-                <button
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-white hover:bg-white/10 rounded-lg"
-                >
-                  <Icon.X className="h-6 w-6" />
-                </button>
-              </div>
-              <nav className="flex-1 flex flex-col">
-                <div className="space-y-4 flex-1">
-                  <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">Features</a>
-                  <a href="#how" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">How it works</a>
-                  <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10">FAQ</a>
-                </div>
-                <div className="mt-auto pt-6">
-                  <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg bg-purple-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-purple-700">Launch App</Link>
-                </div>
-              </nav>
+      {/* Mobile menu backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile menu panel */}
+      <div className={`fixed top-0 right-0 h-full w-80 bg-slate-950 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 md:hidden ${
+        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex items-center justify-between p-6 border-b border-white/20">
+          <span className="bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200 bg-clip-text font-bold tracking-tight text-transparent">Menu</span>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Icon.X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6 flex flex-col h-full">
+          <div className="space-y-6 flex-1">
+            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10 transition-colors">Features</a>
+            <a href="#how" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10 transition-colors">How it works</a>
+            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-white/80 hover:text-white border-b border-white/10 transition-colors">FAQ</a>
+          </div>
+
+          <div className="mt-auto pt-6 border-t border-white/10">
+            <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors">
+              Launch App <Icon.ArrowRight className="h-4 w-4" />
+            </Link>
+            
+            <div className="pt-4 text-center">
+              <p className="text-sm text-white/60">
+                Built for Somnia Testnet
+              </p>
             </div>
           </div>
-        )}
-      </header>
+        </div>
+      </div>
 
       {/* Hero */}
       <section className="relative mx-auto max-w-7xl px-4 pt-22 md:pt-30">
@@ -171,10 +186,10 @@ export default function SomiFinanceLanding() {
       </section>
 
       {/* Features */}
-      <section id="features" className="mx-auto max-w-7xl px-4 py-20">
+      <section id="features" className="mx-auto max-w-7xl px-4 py-20 md:mt-[6rem]">
         <div className="mb-10 flex items-end justify-between">
           <h2 className="text-2xl font-bold md:text-3xl">Why Somi Finance?</h2>
-          <a href="/docs" className="text-sm text-purple-300 hover:text-purple-200">Read Below</a>
+          <a href="" className="text-sm text-purple-300 hover:text-purple-200">Read Below</a>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[{icon:<Icon.Chart className="h-5 w-5"/>,t:"Real-time yield",d:"Transparent accounting and share-based accruals."},
@@ -194,7 +209,7 @@ export default function SomiFinanceLanding() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="mx-auto max-w-7xl px-4 pb-20">
+      <section id="how" className="mx-auto max-w-7xl px-4 pb-20 md:mt-[6rem]">
         <h2 className="mb-8 text-2xl font-bold md:text-3xl">How it works</h2>
         <div className="grid gap-6 md:grid-cols-3">
           {[
