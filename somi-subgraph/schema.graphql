@@ -1,0 +1,77 @@
+type Totals @entity {
+  id: ID!                              # always "global"
+  totalSTTLocked: BigInt!              # live principal (solo + pods)
+  totalActivePods: BigInt!             # pods with activated && now<maturity && !cancelled
+  totalClaims: BigInt!                 # count of all claims
+  totalDepositors: BigInt!             # distinct depositors (rough, maintained by handlers)
+}
+
+type SoloDeposit @entity {
+  id: ID!                              # txHash-logIndex or receiptId as string
+  user: Bytes!
+  planId: BigInt!
+  amount: BigInt!
+  startTime: BigInt!
+  claimed: Boolean!
+  claimTime: BigInt
+  principal: BigInt!                   # equals amount
+  interest: BigInt                     # filled from Claimed event
+  receiptId: BigInt!
+  txHash: Bytes!
+}
+
+type Pod @entity {
+  id: ID!                              # podId
+  term: BigInt!
+  deadline: BigInt!
+  aprBps: BigInt!
+  bonusAprBps: BigInt!
+  penaltyBps: BigInt!
+  minMembers: BigInt!
+  maxMembers: BigInt!
+  allowEarlyExit: Boolean!
+  depositPerMember: BigInt!
+
+  activated: Boolean!
+  cancelled: Boolean!
+  bonusApplied: Boolean!
+  startTime: BigInt
+  maturityTime: BigInt
+
+  membersJoined: BigInt!
+  activeMembers: BigInt!
+  totalDeposited: BigInt!
+  penaltyPool: BigInt!
+}
+
+type PodMember @entity {
+  id: ID!                              # podId-user
+  podId: BigInt!
+  user: Bytes!
+  joinedAt: BigInt!
+  exitedAt: BigInt
+  claimedAt: BigInt
+  receiptId: BigInt!
+  deposit: BigInt!
+}
+
+type Claim @entity {
+  id: ID!                              # txHash-logIndex
+  user: Bytes!
+  kind: String!                        # "solo" | "pod"
+  principal: BigInt!
+  interest: BigInt!
+  penaltyShare: BigInt                 # only for pods
+  timestamp: BigInt!
+  txHash: Bytes!
+  refId: String!                       # planId or podId
+}
+
+type PenaltyPoolSnapshot @entity {
+  id: ID!                              # txHash-logIndex
+  podId: BigInt!
+  value: BigInt!
+  reason: String!                      # "earlyExit" | "claim"
+  timestamp: BigInt!
+  txHash: Bytes!
+}
