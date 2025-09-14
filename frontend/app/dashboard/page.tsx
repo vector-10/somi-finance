@@ -211,32 +211,19 @@ const SoloPlansSection = () => {
 };
 
 const SavingsPodsSection = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
   const pods = [
     { podName: "DeFi Builders Pod", members: "9/10 members", target: "10,000", yourContribution: "500", podApy: "15.0%", status: "ACTIVE" },
     { podName: "Diamond Hands Pod", members: "5/8 members", target: "5,000", yourContribution: "250", podApy: "20.0%", status: "FILLING" },
     { podName: "Whale Savers Pod", members: "12/15 members", target: "50,000", yourContribution: "1,000", podApy: "25.0%", status: "ACTIVE" },
   ];
 
-  const visiblePods = isExpanded ? pods : pods.slice(0, 2);
-
   return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[400px]">
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-white">Savings Pods</h2>
-        {pods.length > 2 && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
-          >
-            <span>{isExpanded ? 'Show Less' : `Show All (${pods.length})`}</span>
-            <span className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>↓</span>
-          </button>
-        )}
       </div>
-      <div className="space-y-4">
-        {visiblePods.map((pod, index) => (
+      <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2">
+        {pods.map((pod, index) => (
           <PodCard key={index} {...pod} />
         ))}
       </div>
@@ -264,22 +251,19 @@ const Page = () => {
       {/* Top Row - Key Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WalletOverviewCard />
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <SaverLevelCard />
-        <StreakCard />
-        </div>
+        <SavingsSummaryCard />
       </div>
 
       {/* Gamification Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SavingsSummaryCard />
-        <SavingsPodsSection />
+        <SaverLevelCard />
+        <StreakCard />
       </div>
 
       {/* Plans and Pods Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SoloPlansSection />
-       
+        <SavingsPodsSection />
       </div>
     </div>
   );

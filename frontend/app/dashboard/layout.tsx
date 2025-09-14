@@ -13,6 +13,40 @@ const tabs = [
   { name: 'Subgraph', href: '/dashboard/subgraph' },
 ];
 
+// Global scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1A2333;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #4B5563;
+  }
+  
+  /* Apply to main content area */
+  main::-webkit-scrollbar {
+    width: 8px;
+  }
+  main::-webkit-scrollbar-track {
+    background: #111827;
+    border-radius: 4px;
+  }
+  main::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+  }
+  main::-webkit-scrollbar-thumb:hover {
+    background: #4B5563;
+  }
+`;
+
 function TabNavigation() {
   const pathname = usePathname();
   
@@ -48,35 +82,40 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* DApp Header */}
-      <header className="bg-gradient-to-r from-purple-900 via-blue-900 to-purple-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Somi Finance
-              </Link>
-              <div className="hidden sm:block text-sm text-gray-400">
-                Somnia DeFi Savings Protocol
+    <>
+      <style jsx global>{scrollbarStyles}</style>
+      <div className="h-screen bg-gray-900 text-white flex flex-col">
+        {/* Fixed DApp Header */}
+        <header className="bg-gradient-to-r from-purple-900 via-blue-900 to-purple-900 border-b border-gray-800 flex-shrink-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-4">
+                <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Somi Finance
+                </Link>
+                <div className="hidden sm:block text-sm text-gray-400">
+                  Somnia DeFi Savings Protocol
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <ConnectButton />
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <ConnectButton />
-            </div>
           </div>
+        </header>
+
+        {/* Fixed Tab Navigation */}
+        <div className="max-w-7xl mx-auto w-full flex-shrink-0">
+          <TabNavigation />
         </div>
-      </header>
 
-      {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto">
-        <TabNavigation />
+        {/* Scrollable Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {children}
+          </div>
+        </main>
       </div>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-    </div>
+    </>
   );
 }
