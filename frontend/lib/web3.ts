@@ -12,7 +12,7 @@ const somniaShannon = defineChain({
 
 export const config = getDefaultConfig({
   appName: 'Somi Finance',
-  projectId: 'your-project-id',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
   chains: [somniaShannon],
   ssr: true
 })
