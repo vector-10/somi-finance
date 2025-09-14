@@ -18,7 +18,7 @@ function TabNavigation() {
   
   return (
     <div className="border-b border-gray-800">
-      <nav className="flex space-x-8 px-6" aria-label="Tabs">
+      <nav className="flex justify-center space-x-8 px-6" aria-label="Tabs">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           return (
@@ -62,9 +62,6 @@ export default function DashboardLayout({
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="hidden md:block text-xs text-gray-400">
-                Somnia Shannon Testnet
-              </div>
               <ConnectButton />
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAccount, useBalance } from 'wagmi';
 import { formatEther } from 'viem';
 
@@ -9,7 +9,7 @@ const WalletOverviewCard = () => {
   const { data: balance } = useBalance({ address });
 
   return (
-    <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 rounded-md p-6">
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Wallet Balance</h3>
@@ -32,7 +32,7 @@ const WalletOverviewCard = () => {
 };
 
 const SavingsSummaryCard = () => (
-  <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md p-6">
+  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
     <h3 className="text-lg font-semibold text-white mb-4">Active Savings</h3>
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -58,7 +58,7 @@ const SaverLevelCard = () => {
   const nextLevelRequirement = 5000;
   
   return (
-    <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-md p-6">
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white">Saver Level</h3>
         <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
@@ -83,7 +83,7 @@ const SaverLevelCard = () => {
 };
 
 const StreakCard = () => (
-  <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-md p-6">
+  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
     <h3 className="text-lg font-semibold text-white mb-2">Savings Streak</h3>
     <div className="flex items-center space-x-4">
       <div className="text-center">
@@ -113,7 +113,7 @@ const SoloPlanCard = ({ planType, amount, timeLeft, apy, status, progress }: {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md p-4">
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-4">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h4 className="font-semibold text-white">{planType} Plan</h4>
@@ -150,7 +150,7 @@ const PodCard = ({ podName, members, target, yourContribution, podApy, status }:
   podApy: string;
   status: string;
 }) => (
-  <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-md p-4">
+  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-4">
     <div className="flex justify-between items-start mb-3">
       <div>
         <h4 className="font-semibold text-white">{podName}</h4>
@@ -173,83 +173,76 @@ const PodCard = ({ podName, members, target, yourContribution, podApy, status }:
   </div>
 );
 
-const AchievementBadge = ({ title, description, earned }: {
-  title: string;
-  description: string;
-  earned: boolean;
-}) => (
-  <div className={`p-3 rounded-md border ${earned 
-    ? 'bg-gradient-to-br from-gold-900/30 to-yellow-900/30 border-yellow-600/50' 
-    : 'bg-gray-800 border-gray-700'
-  }`}>
-    <div className="flex items-center space-x-2">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${earned 
-        ? 'bg-yellow-600' 
-        : 'bg-gray-600'
+const SoloPlansSection = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const plans = [
+    { planType: "6 Month", amount: "500.00", timeLeft: "2 months left", apy: "8.5%", status: "active" as const, progress: 67 },
+    { planType: "12 Month", amount: "750.00", timeLeft: "8 months left", apy: "12.0%", status: "active" as const, progress: 33 },
+    { planType: "24 Month", amount: "1,500.00", timeLeft: "Ready to claim!", apy: "18.0%", status: "claimable" as const, progress: 100 },
+    { planType: "6 Month", amount: "300.00", timeLeft: "4 months left", apy: "8.5%", status: "active" as const, progress: 45 },
+  ];
+
+  const visiblePlans = isExpanded ? plans : plans.slice(0, 2);
+
+  return (
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
+        {plans.length > 2 && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
+          >
+            <span>{isExpanded ? 'Show Less' : `Show All (${plans.length})`}</span>
+            <span className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>↓</span>
+          </button>
+        )}
+      </div>
+      <div className={`space-y-4 overflow-hidden transition-all duration-500 ease-in-out ${
+        isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-[200px] opacity-100'
       }`}>
-        <span className="text-xs">🏆</span>
-      </div>
-      <div>
-        <p className={`font-medium text-sm ${earned ? 'text-yellow-300' : 'text-gray-400'}`}>
-          {title}
-        </p>
-        <p className="text-xs text-gray-500">{description}</p>
+        {visiblePlans.map((plan, index) => (
+          <SoloPlanCard key={index} {...plan} />
+        ))}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const ProtocolStatsCard = () => (
-  <div className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border border-blue-600/50 rounded-md p-6">
-    <h3 className="text-lg font-semibold text-white mb-4">Protocol Stats</h3>
-    <div className="grid grid-cols-3 gap-4 text-center">
-      <div>
-        <p className="text-xl font-bold text-blue-300">847K</p>
-        <p className="text-gray-400 text-xs">Total STT Locked</p>
-      </div>
-      <div>
-        <p className="text-xl font-bold text-blue-300">2,341</p>
-        <p className="text-gray-400 text-xs">Active Savers</p>
-      </div>
-      <div>
-        <p className="text-xl font-bold text-blue-300">14.2%</p>
-        <p className="text-gray-400 text-xs">Avg APY</p>
-      </div>
-    </div>
-  </div>
-);
+const SavingsPodsSection = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const pods = [
+    { podName: "DeFi Builders Pod", members: "9/10 members", target: "10,000", yourContribution: "500", podApy: "15.0%", status: "ACTIVE" },
+    { podName: "Diamond Hands Pod", members: "5/8 members", target: "5,000", yourContribution: "250", podApy: "20.0%", status: "FILLING" },
+    { podName: "Whale Savers Pod", members: "12/15 members", target: "50,000", yourContribution: "1,000", podApy: "25.0%", status: "ACTIVE" },
+  ];
 
-const ActivityItem = ({ action, amount, time, hash }: {
-  action: string;
-  amount: string;
-  time: string;
-  hash: string;
-}) => (
-  <div className="flex justify-between items-center py-3 border-b border-gray-800 last:border-b-0">
-    <div className="flex items-center space-x-3">
-      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-        <span className="text-xs font-bold">
-          {action.includes('Deposit') ? '↓' : action.includes('Claim') ? '↑' : '👥'}
-        </span>
+  const visiblePods = isExpanded ? pods : pods.slice(0, 2);
+
+  return (
+    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[400px]">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Savings Pods</h2>
+        {pods.length > 2 && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
+          >
+            <span>{isExpanded ? 'Show Less' : `Show All (${pods.length})`}</span>
+            <span className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>↓</span>
+          </button>
+        )}
       </div>
-      <div>
-        <p className="text-white text-sm font-medium">{action}</p>
-        <p className="text-gray-400 text-xs">{amount} STT</p>
+      <div className="space-y-4">
+        {visiblePods.map((pod, index) => (
+          <PodCard key={index} {...pod} />
+        ))}
       </div>
     </div>
-    <div className="text-right">
-      <p className="text-gray-400 text-xs">{time}</p>
-      <a 
-        href={`https://explorer.somnia.network/tx/${hash}`}
-        className="text-purple-400 hover:text-purple-300 text-xs"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        View ↗
-      </a>
-    </div>
-  </div>
-);
+  );
+};
 
 const Page = () => {
   const { isConnected } = useAccount();
@@ -268,149 +261,25 @@ const Page = () => {
 
   return (
     <div className="space-y-8">
-      {/* STT Price Ticker */}
-      <div className="bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-md p-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-6">
-            <div>
-              <span className="text-gray-400 text-sm">STT Price</span>
-              <p className="text-xl font-bold text-white">$0.4521</p>
-            </div>
-            <div>
-              <span className="text-green-400 text-sm">+2.34%</span>
-              <p className="text-gray-400 text-xs">24h change</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-gray-400 text-sm">Your Portfolio Value</p>
-            <p className="text-xl font-bold text-purple-300">$1,243.75</p>
-          </div>
-        </div>
-      </div>
-
       {/* Top Row - Key Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WalletOverviewCard />
-        <SavingsSummaryCard />
-        <ProtocolStatsCard />
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <SaverLevelCard />
+        <StreakCard />
+        </div>
       </div>
 
       {/* Gamification Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SaverLevelCard />
-        <StreakCard />
+        <SavingsSummaryCard />
+        <SavingsPodsSection />
       </div>
 
-      {/* Solo Plans */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Solo Savings Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <SoloPlanCard
-            planType="6 Month"
-            amount="500.00"
-            timeLeft="2 months left"
-            apy="8.5%"
-            status="active"
-            progress={67}
-          />
-          <SoloPlanCard
-            planType="12 Month"
-            amount="750.00"
-            timeLeft="8 months left"
-            apy="12.0%"
-            status="active"
-            progress={33}
-          />
-          <SoloPlanCard
-            planType="24 Month"
-            amount="1,500.00"
-            timeLeft="Ready to claim!"
-            apy="18.0%"
-            status="claimable"
-            progress={100}
-          />
-        </div>
-      </div>
-
-      {/* Savings Pods */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Savings Pods</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PodCard
-            podName="DeFi Builders Pod"
-            members="9/10 members"
-            target="10,000"
-            yourContribution="500"
-            podApy="15.0%"
-            status="ACTIVE"
-          />
-          <PodCard
-            podName="Diamond Hands Pod"
-            members="5/8 members"
-            target="5,000"
-            yourContribution="250"
-            podApy="20.0%"
-            status="FILLING"
-          />
-        </div>
-      </div>
-
-      {/* Achievements */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Achievements</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <AchievementBadge
-            title="First Depositor"
-            description="Made your first deposit"
-            earned={true}
-          />
-          <AchievementBadge
-            title="Pod Master"
-            description="Joined 3+ savings pods"
-            earned={true}
-          />
-          <AchievementBadge
-            title="Diamond Hands"
-            description="Complete 24-month plan"
-            earned={false}
-          />
-          <AchievementBadge
-            title="Community Builder"
-            description="Create successful pod"
-            earned={false}
-          />
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Recent Activity</h2>
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md p-6">
-          <ActivityItem
-            action="Deposit to 6M Plan"
-            amount="500.00"
-            time="2 hours ago"
-            hash="0x1234...5678"
-          />
-          <ActivityItem
-            action="Joined Pod"
-            amount="250.00"
-            time="1 day ago"
-            hash="0xabcd...efgh"
-          />
-          <ActivityItem
-            action="Claim Rewards"
-            amount="12.45"
-            time="3 days ago"
-            hash="0x9876...5432"
-          />
-          <ActivityItem
-            action="Deposit to 12M Plan"
-            amount="750.00"
-            time="1 week ago"
-            hash="0xdef0...1234"
-          />
-        </div>
+      {/* Plans and Pods Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SoloPlansSection />
+       
       </div>
     </div>
   );
