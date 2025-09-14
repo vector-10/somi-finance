@@ -69,7 +69,7 @@ export default function SomiFinanceLanding() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link href="/app" className="hidden md:flex items-center rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">Savings Plans <Icon.ArrowRight className="h-4 w-4 font-bold" /></Link>
+            <Link href="/dashboard" className="hidden md:flex items-center rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">Savings Plans <Icon.ArrowRight className="h-4 w-4 font-bold" /></Link>
             
             {/* Mobile menu button */}
             <button
@@ -116,7 +116,7 @@ export default function SomiFinanceLanding() {
           </div>
 
           <div className="mt-auto pt-6 border-t border-white/10">
-            <Link href="/app" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors">
+            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors">
               Launch App <Icon.ArrowRight className="h-4 w-4" />
             </Link>
             
@@ -143,7 +143,7 @@ export default function SomiFinanceLanding() {
               Somi Finance is the First non-custodial savings Protocol built to Leverage Somnia's high-speed L1 Blockchain. <br /> Deposit tokens, earn yields and stay liquid.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
+              <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
                 Launch App <Icon.ArrowRight className="h-4 w-4" />
               </Link>
               <a href="#features" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Explore Features</a>
@@ -232,7 +232,7 @@ export default function SomiFinanceLanding() {
           <h3 className="text-balance text-2xl font-bold md:text-3xl">Ready to try Somi Finance on Somnia?</h3>
           <p className="mx-auto mt-2 max-w-2xl text-white/80">Launch the app, deposit test tokens, and see real-time on-chain state.</p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
               Open App <Icon.ArrowRight className="h-4 w-4" />
             </Link>
             <a href="/docs" className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">Read Docs</a>

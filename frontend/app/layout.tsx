@@ -1,12 +1,7 @@
-'use client'
 import type { Metadata } from "next";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider } from 'wagmi'
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
-import { config } from '../lib/web3'
-import '@rainbow-me/rainbowkit/styles.css'
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from './providers';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,8 +18,6 @@ export const metadata: Metadata = {
   description: "Save Earn Yields and transact on-chain, all on Somnia",
 };
 
-const queryClient = new QueryClient()
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,13 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
-            <RainbowKitProvider>
-            {children}
-            </RainbowKitProvider>
-          </QueryClientProvider>
-        </WagmiProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
