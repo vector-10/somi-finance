@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { TbMoneybag } from "react-icons/tb";
 
 const Page = () => {
   const [amount, setAmount] = useState('');
@@ -303,8 +304,8 @@ const Page = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="text-4xl mb-4">📊</div>
+              <div className=" text-green-500">
+                <div className="text-4xl  mb-4"><TbMoneybag /></div>
                 <p className="text-gray-400">Enter amount and duration to see projected returns</p>
               </div>
             </div>

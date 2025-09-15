@@ -9,7 +9,7 @@ const tabs = [
   { name: 'Solo Deposit', href: '/dashboard/deposit' },
   { name: 'Withdraw', href: '/dashboard/withdraw' },
   { name: 'Savings Pods', href: '/dashboard/pods' },
-  { name: 'Calculate Interest', href: '/dashboard/calculator' },
+  { name: 'Calculate Interest', href: '/dashboard/interest' },
 ];
 
 const scrollbarStyles = `
