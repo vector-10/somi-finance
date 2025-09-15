@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 
 const tabs = [
   { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Deposit', href: '/dashboard/deposit' },
+  { name: 'Solo Deposit', href: '/dashboard/deposit' },
   { name: 'Withdraw', href: '/dashboard/withdraw' },
   { name: 'Savings Pods', href: '/dashboard/pods' },
   { name: 'Calculate Interest', href: '/dashboard/calculator' },
