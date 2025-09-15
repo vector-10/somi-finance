@@ -10,10 +10,8 @@ const tabs = [
   { name: 'Withdraw', href: '/dashboard/withdraw' },
   { name: 'Savings Pods', href: '/dashboard/pods' },
   { name: 'Calculate Interest', href: '/dashboard/calculator' },
-  { name: 'Subgraph', href: '/dashboard/subgraph' },
 ];
 
-// Global scrollbar styles
 const scrollbarStyles = `
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -52,7 +50,7 @@ function TabNavigation() {
   
   return (
     <div className="border-b border-gray-800">
-      <nav className="flex justify-center space-x-8 px-6" aria-label="Tabs">
+      <nav className="flex justify-center space-x-8 px-6 " aria-label="Tabs">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           return (
@@ -60,7 +58,7 @@ function TabNavigation() {
               key={tab.name}
               href={tab.href}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-colors
                 ${isActive
                   ? 'border-purple-500 text-purple-400'
                   : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
@@ -84,9 +82,11 @@ export default function DashboardLayout({
   return (
     <>
       <style jsx global>{scrollbarStyles}</style>
-      <div className="h-screen bg-gray-900 text-white flex flex-col">
+      <div className="h-screen text-white bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(107,70,193,0.25),transparent),radial-gradient(40%_30%_at_100%_10%,rgba(59,130,246,0.18),transparent)] flex flex-col">
+        {/* Grid overlay */}
+        <div aria-hidden className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_100%)]" />
         {/* Fixed DApp Header */}
-        <header className="bg-gradient-to-r from-purple-900 via-blue-900 to-purple-900 border-b border-gray-800 flex-shrink-0">
+        <header className="sticky top-0 z-40 border-b border-white/10 backdrop-blur supports-[backdrop-filter]:bg-white/5 flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-4">

@@ -11,7 +11,7 @@ const WalletOverviewCard = () => {
   const { data: balance } = useBalance({ address });
 
   return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Wallet Balance</h3>
@@ -24,7 +24,7 @@ const WalletOverviewCard = () => {
           <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors">
             Deposit
           </button>
-          <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm font-medium transition-colors">
+          <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm font-medium transition-colors">
             Withdraw
           </button>
         </div>
@@ -34,7 +34,7 @@ const WalletOverviewCard = () => {
 };
 
 const SavingsSummaryCard = () => (
-  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
+  <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
     <h3 className="text-lg font-semibold text-white mb-4">Active Savings</h3>
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -58,7 +58,6 @@ const SaverLevelCard = () => {
     const totalSaved = 2750;
     const nextLevelRequirement = 5000;
     
-    // Tier icons with golden colors
     const tierIcons = {
       Bronze: <CiBadgeDollar className="w-12 h-12 text-orange-600" />,
       Silver: <CiBadgeDollar className="w-12 h-12 text-gray-400" />,
@@ -67,7 +66,7 @@ const SaverLevelCard = () => {
     };
     
     return (
-      <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
+      <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">Saver Level</h3>
           <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
@@ -75,14 +74,12 @@ const SaverLevelCard = () => {
           </div>
         </div>
         
-        {/* Icon Display Section */}
         <div className="flex flex-col items-center mb-4">
           {tierIcons[level as keyof typeof tierIcons]}
           <p className="text-xl font-bold text-yellow-400 mt-2">{totalSaved} STT</p>
           <p className="text-gray-400 text-sm">Total Saved</p>
         </div>
         
-        {/* Tier Benefits */}
         <div className="text-center">
           <p className="text-yellow-400 text-sm font-medium">Gold Tier Benefits:</p>
           <p className="text-yellow-300 text-sm">+0.5% APY bonus on all plans</p>
@@ -94,11 +91,8 @@ const SaverLevelCard = () => {
     );
   };
 
-
-
-
 const StreakCard = () => (
-  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
+  <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
     <h3 className="text-lg font-semibold text-white mb-2">Savings Streak</h3>
     <div className="flex items-center justify-center space-x-4 min-h-[12rem]">
       <div className="text-center">
@@ -128,7 +122,7 @@ const SoloPlanCard = ({ planType, amount, timeLeft, apy, status, progress }: {
   };
 
   return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-4">
+    <div className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h4 className="font-semibold text-white">{planType} Plan</h4>
@@ -165,7 +159,7 @@ const PodCard = ({ podName, members, target, yourContribution, podApy, status }:
   podApy: string;
   status: string;
 }) => (
-  <div className="bg-[#1A2333] border border-gray-700 rounded-md p-4">
+  <div className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
     <div className="flex justify-between items-start mb-3">
       <div>
         <h4 className="font-semibold text-white">{podName}</h4>
@@ -188,8 +182,6 @@ const PodCard = ({ podName, members, target, yourContribution, podApy, status }:
   </div>
 );
 
-
-
 const SoloPlansSection = () => {
     const plans = [
       { planType: "6 Month", amount: "500.00", timeLeft: "2 months left", apy: "8.5%", status: "active" as const, progress: 67 },
@@ -199,11 +191,11 @@ const SoloPlansSection = () => {
     ];
   
     return (
-      <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
+      <div className="bg-white/5 border border-white/10 rounded-md p-6 min-h-[280px] backdrop-blur">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
         </div>
-        <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2">
+        <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
           {plans.map((plan, index) => (
             <SoloPlanCard key={index} {...plan} />
           ))}
@@ -211,7 +203,6 @@ const SoloPlansSection = () => {
       </div>
     );
   };
-
 
 const SavingsPodsSection = () => {
   const pods = [
@@ -221,11 +212,11 @@ const SavingsPodsSection = () => {
   ];
 
   return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 min-h-[280px] backdrop-blur">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-white">Savings Pods</h2>
       </div>
-      <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2">
+      <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         {pods.map((pod, index) => (
           <PodCard key={index} {...pod} />
         ))}
@@ -251,19 +242,16 @@ const Page = () => {
 
   return (
     <div className="space-y-8">
-      {/* Top Row - Key Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WalletOverviewCard />
         <SavingsSummaryCard />
       </div>
 
-      {/* Gamification Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SaverLevelCard />
         <StreakCard />
       </div>
 
-      {/* Plans and Pods Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SoloPlansSection />
         <SavingsPodsSection />
