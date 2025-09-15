@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAccount, useBalance } from 'wagmi';
+import { CiBadgeDollar } from "react-icons/ci";
+import { BiSolidBadgeDollar } from "react-icons/bi";
 import { formatEther } from 'viem';
 
 const WalletOverviewCard = () => {
@@ -52,40 +54,53 @@ const SavingsSummaryCard = () => (
 );
 
 const SaverLevelCard = () => {
-  const level = "Gold";
-  const progress = 75;
-  const totalSaved = 2750;
-  const nextLevelRequirement = 5000;
-  
-  return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Saver Level</h3>
-        <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
-          {level}
+    const level = "Gold";
+    const totalSaved = 2750;
+    const nextLevelRequirement = 5000;
+    
+    // Tier icons with golden colors
+    const tierIcons = {
+      Bronze: <CiBadgeDollar className="w-12 h-12 text-orange-600" />,
+      Silver: <CiBadgeDollar className="w-12 h-12 text-gray-400" />,
+      Gold: <BiSolidBadgeDollar className="w-20 h-20 text-yellow-500" />,
+      Diamond: <CiBadgeDollar className="w-12 h-12 text-blue-400" />
+    };
+    
+    return (
+      <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Saver Level</h3>
+          <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
+            {level}
+          </div>
+        </div>
+        
+        {/* Icon Display Section */}
+        <div className="flex flex-col items-center mb-4">
+          {tierIcons[level as keyof typeof tierIcons]}
+          <p className="text-xl font-bold text-yellow-400 mt-2">{totalSaved} STT</p>
+          <p className="text-gray-400 text-sm">Total Saved</p>
+        </div>
+        
+        {/* Tier Benefits */}
+        <div className="text-center">
+          <p className="text-yellow-400 text-sm font-medium">Gold Tier Benefits:</p>
+          <p className="text-yellow-300 text-sm">+0.5% APY bonus on all plans</p>
+          <p className="text-gray-400 text-xs mt-1">
+            {nextLevelRequirement - totalSaved} STT until Diamond tier
+          </p>
         </div>
       </div>
-      <div className="mb-3">
-        <div className="flex justify-between text-sm text-gray-400 mb-1">
-          <span>{totalSaved} STT saved</span>
-          <span>{nextLevelRequirement} STT for Diamond</span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" 
-            style={{width: `${progress}%`}}
-          ></div>
-        </div>
-      </div>
-      <p className="text-yellow-400 text-sm">Gold Tier: +0.5% APY bonus on all plans</p>
-    </div>
-  );
-};
+    );
+  };
+
+
+
 
 const StreakCard = () => (
   <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6">
     <h3 className="text-lg font-semibold text-white mb-2">Savings Streak</h3>
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center justify-center space-x-4 min-h-[12rem]">
       <div className="text-center">
         <p className="text-3xl font-bold text-green-400">127</p>
         <p className="text-gray-400 text-sm">Days Active</p>
@@ -173,42 +188,30 @@ const PodCard = ({ podName, members, target, yourContribution, podApy, status }:
   </div>
 );
 
+
+
 const SoloPlansSection = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
+    const plans = [
+      { planType: "6 Month", amount: "500.00", timeLeft: "2 months left", apy: "8.5%", status: "active" as const, progress: 67 },
+      { planType: "12 Month", amount: "750.00", timeLeft: "8 months left", apy: "12.0%", status: "active" as const, progress: 33 },
+      { planType: "24 Month", amount: "1,500.00", timeLeft: "Ready to claim!", apy: "18.0%", status: "claimable" as const, progress: 100 },
+      { planType: "6 Month", amount: "300.00", timeLeft: "4 months left", apy: "8.5%", status: "active" as const, progress: 45 },
+    ];
   
-  const plans = [
-    { planType: "6 Month", amount: "500.00", timeLeft: "2 months left", apy: "8.5%", status: "active" as const, progress: 67 },
-    { planType: "12 Month", amount: "750.00", timeLeft: "8 months left", apy: "12.0%", status: "active" as const, progress: 33 },
-    { planType: "24 Month", amount: "1,500.00", timeLeft: "Ready to claim!", apy: "18.0%", status: "claimable" as const, progress: 100 },
-    { planType: "6 Month", amount: "300.00", timeLeft: "4 months left", apy: "8.5%", status: "active" as const, progress: 45 },
-  ];
-
-  const visiblePlans = isExpanded ? plans : plans.slice(0, 2);
-
-  return (
-    <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
-        {plans.length > 2 && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-purple-400 hover:text-purple-300 text-sm flex items-center space-x-1"
-          >
-            <span>{isExpanded ? 'Show Less' : `Show All (${plans.length})`}</span>
-            <span className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>↓</span>
-          </button>
-        )}
+    return (
+      <div className="bg-[#1A2333] border border-gray-700 rounded-md p-6 min-h-[280px]">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
+        </div>
+        <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2">
+          {plans.map((plan, index) => (
+            <SoloPlanCard key={index} {...plan} />
+          ))}
+        </div>
       </div>
-      <div className={`space-y-4 overflow-hidden transition-all duration-500 ease-in-out ${
-        isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-[200px] opacity-100'
-      }`}>
-        {visiblePlans.map((plan, index) => (
-          <SoloPlanCard key={index} {...plan} />
-        ))}
-      </div>
-    </div>
-  );
-};
+    );
+  };
+
 
 const SavingsPodsSection = () => {
   const pods = [
