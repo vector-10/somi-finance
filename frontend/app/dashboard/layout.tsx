@@ -122,11 +122,11 @@ function MobileBottomNavigation() {
               href={tab.href}
               className={`
                 flex flex-col items-center justify-center py-2 px-3 min-w-0 flex-1 transition-colors
-                ${isActive ? 'text-purple-400' : 'text-gray-400'}
+                ${isActive ? 'text-purple-400' : 'text-gray-300'}
               `}
             >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-purple-400' : 'text-gray-400'}`} />
-              <span className={`text-xs font-medium truncate ${isActive ? 'text-purple-400' : 'text-gray-400'}`}>
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-purple-400' : 'text-gray-300'}`} />
+              <span className={`text-xs font-medium truncate ${isActive ? 'text-purple-400' : 'text-gray-300'}`}>
                 {tab.shortName}
               </span>
             </Link>

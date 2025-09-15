@@ -64,19 +64,19 @@ const JoinPodTab = () => {
               Pod ID
             </label>
             <div className="flex space-x-2">
-              <input
+            <input
                 type="text"
                 value={podId}
                 onChange={(e) => setPodId(e.target.value)}
                 placeholder="Enter Pod ID (e.g., POD-12345)"
-                className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
+                className="w-40  md:flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <button
                 onClick={searchPod}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded-md text-white font-medium transition-colors"
-              >
+            >
                 Search
-              </button>
+            </button>
             </div>
           </div>
 
