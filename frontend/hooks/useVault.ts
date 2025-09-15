@@ -1,53 +1,153 @@
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther } from 'viem'
 import { contracts } from '../lib/contracts'
 
 export function useVault() {
   const { writeContract, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  
+  const createPod = async ({
+    name,
+    description,
+    isPublic,
+    contributionAmountEth,
+    planType,
+    customDays = 0
+  }: {
+    name: string;
+    description: string;
+    isPublic: boolean;
+    contributionAmountEth: string;
+    planType: number;
+    customDays?: number;
+  }) => {
+    writeContract({
+      ...contracts.podsVault,
+      functionName: 'createPod',
+      args: [
+        name,
+        description,
+        isPublic,
+        parseEther(contributionAmountEth),
+        planType,
+        customDays
+      ]
+    })
+  }
 
-  const joinPod = async ({ podId, amountEth }: { podId: number; amountEth: string }) => {
+  const joinPod = async (podId: bigint) => {
+
     writeContract({
       ...contracts.podsVault,
       functionName: 'joinPod',
-      args: [BigInt(podId)],
+      args: [podId],
+    })
+  }
+
+  const joinPodWithAmount = async ({ podId, amountEth }: { podId: bigint; amountEth: string }) => {
+    writeContract({
+      ...contracts.podsVault,
+      functionName: 'joinPod',
+      args: [podId],
       value: parseEther(amountEth)
     })
   }
 
-  const earlyExit = async (podId: number) => {
+
+  const leavePod = async (podId: bigint) => {
     writeContract({
       ...contracts.podsVault,
-      functionName: 'earlyExit',
-      args: [BigInt(podId)]
+      functionName: 'leavePod',
+      args: [podId]
     })
   }
 
-  const claim = async (podId: number) => {
+
+  const cancelPod = async (podId: bigint) => {
     writeContract({
       ...contracts.podsVault,
-      functionName: 'claim',
-      args: [BigInt(podId)]
+      functionName: 'cancelPod',
+      args: [podId]
     })
   }
 
-  const activatePod = async (podId: number) => {
+
+  const setPodVisibility = async (podId: bigint, isPublic: boolean) => {
     writeContract({
       ...contracts.podsVault,
-      functionName: 'activatePod',
-      args: [BigInt(podId)]
+      functionName: 'setPodVisibility',
+      args: [podId, isPublic]
+    })
+  }
+
+  const updatePodMetadata = async (podId: bigint, name: string, description: string) => {
+    writeContract({
+      ...contracts.podsVault,
+      functionName: 'updatePodMetadata',
+      args: [podId, name, description]
+    })
+  }
+
+
+  const checkpoint = async (podId: bigint) => {
+    writeContract({
+      ...contracts.podsVault,
+      functionName: 'checkpoint',
+      args: [podId]
     })
   }
 
   return {
+    createPod,
     joinPod,
-    earlyExit,
-    claim,
-    activatePod,
+    joinPodWithAmount,
+    leavePod,
+    cancelPod,
+    setPodVisibility,
+    updatePodMetadata,
+    checkpoint,
     isPending,
     isConfirming,
     isSuccess,
     error,
     hash
   }
+}
+
+
+export function usePodDetails(podId: bigint) {
+  return useReadContract({
+    ...contracts.podsVault,
+    functionName: 'getPodDetails',
+    args: [podId],
+    query: { enabled: !!podId }
+  })
+}
+
+
+export function usePublicPods(cursor: bigint = 0n, size: bigint = 10n) {
+  return useReadContract({
+    ...contracts.podsVault,
+    functionName: 'getPublicPods',
+    args: [cursor, size]
+  })
+}
+
+
+export function usePodMemberCount(podId: bigint) {
+  return useReadContract({
+    ...contracts.podsVault,
+    functionName: 'getPodMemberCount',
+    args: [podId],
+    query: { enabled: !!podId }
+  })
+}
+
+export function usePreviewMemberInterest(podId: bigint, userAddress: string) {
+  return useReadContract({
+    ...contracts.podsVault,
+    functionName: 'previewMemberInterest',
+    args: [podId, userAddress],
+    query: { enabled: !!podId && !!userAddress }
+  })
 }

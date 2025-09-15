@@ -25,38 +25,19 @@
 				"type": "uint256"
 			},
 			{
-				"indexed": false,
-				"internalType": "uint48",
-				"name": "startTime",
-				"type": "uint48"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint48",
-				"name": "maturityTime",
-				"type": "uint48"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint16",
-				"name": "aprBpsEffective",
-				"type": "uint16"
-			}
-		],
-		"name": "Activated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
 				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
-				"name": "podId",
+				"name": "receiptId",
 				"type": "uint256"
 			}
 		],
-		"name": "Cancelled",
+		"name": "MemberJoined",
 		"type": "event"
 	},
 	{
@@ -88,74 +69,12 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "penaltyShare",
-				"type": "uint256"
+				"internalType": "bool",
+				"name": "matured",
+				"type": "bool"
 			}
 		],
-		"name": "Claimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "podId",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "refund",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "penalty",
-				"type": "uint256"
-			}
-		],
-		"name": "EarlyExit",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "podId",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "receiptId",
-				"type": "uint256"
-			}
-		],
-		"name": "Joined",
+		"name": "MemberLeft",
 		"type": "event"
 	},
 	{
@@ -198,9 +117,146 @@
 				"internalType": "uint256",
 				"name": "podId",
 				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint48",
+				"name": "startTime",
+				"type": "uint48"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint48",
+				"name": "maturityTime",
+				"type": "uint48"
+			}
+		],
+		"name": "PodActivated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			}
+		],
+		"name": "PodCancelled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "creator",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "isPublic",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint8",
+				"name": "planType",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint16",
+				"name": "aprBps",
+				"type": "uint16"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint48",
+				"name": "term",
+				"type": "uint48"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint128",
+				"name": "contributionAmount",
+				"type": "uint128"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
 			}
 		],
 		"name": "PodCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			}
+		],
+		"name": "PodMetadataUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "isPublic",
+				"type": "bool"
+			}
+		],
+		"name": "PodVisibilityChanged",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newTreasury",
+				"type": "address"
+			}
+		],
+		"name": "TreasurySet",
 		"type": "event"
 	},
 	{
@@ -224,19 +280,6 @@
 				"type": "uint256"
 			}
 		],
-		"name": "activatePod",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "podId",
-				"type": "uint256"
-			}
-		],
 		"name": "cancelPod",
 		"outputs": [],
 		"stateMutability": "nonpayable",
@@ -250,7 +293,7 @@
 				"type": "uint256"
 			}
 		],
-		"name": "claim",
+		"name": "checkpoint",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -258,63 +301,41 @@
 	{
 		"inputs": [
 			{
-				"components": [
-					{
-						"internalType": "uint48",
-						"name": "term",
-						"type": "uint48"
-					},
-					{
-						"internalType": "uint48",
-						"name": "startDeadline",
-						"type": "uint48"
-					},
-					{
-						"internalType": "uint16",
-						"name": "aprBps",
-						"type": "uint16"
-					},
-					{
-						"internalType": "uint16",
-						"name": "bonusAprBps",
-						"type": "uint16"
-					},
-					{
-						"internalType": "uint16",
-						"name": "penaltyBps",
-						"type": "uint16"
-					},
-					{
-						"internalType": "uint32",
-						"name": "minMembers",
-						"type": "uint32"
-					},
-					{
-						"internalType": "uint32",
-						"name": "maxMembers",
-						"type": "uint32"
-					},
-					{
-						"internalType": "bool",
-						"name": "allowEarlyExit",
-						"type": "bool"
-					},
-					{
-						"internalType": "uint128",
-						"name": "depositPerMember",
-						"type": "uint128"
-					}
-				],
-				"internalType": "struct PodsVault.CreateArgs",
-				"name": "a",
-				"type": "tuple"
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPublic",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint128",
+				"name": "contributionAmount",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint8",
+				"name": "planType",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint48",
+				"name": "customDays",
+				"type": "uint48"
 			}
 		],
 		"name": "createPod",
 		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "id",
+				"name": "podId",
 				"type": "uint256"
 			}
 		],
@@ -329,9 +350,168 @@
 				"type": "uint256"
 			}
 		],
-		"name": "earlyExit",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "getPodDetails",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "creator",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPublic",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint8",
+				"name": "planType",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint16",
+				"name": "aprBps",
+				"type": "uint16"
+			},
+			{
+				"internalType": "uint48",
+				"name": "term",
+				"type": "uint48"
+			},
+			{
+				"internalType": "uint128",
+				"name": "contributionAmount",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "activated",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint48",
+				"name": "startTime",
+				"type": "uint48"
+			},
+			{
+				"internalType": "uint48",
+				"name": "maturityTime",
+				"type": "uint48"
+			},
+			{
+				"internalType": "bool",
+				"name": "cancelled",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint32",
+				"name": "membersJoined",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint32",
+				"name": "activeMembers",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint128",
+				"name": "totalDeposited",
+				"type": "uint128"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			}
+		],
+		"name": "getPodMemberCount",
+		"outputs": [
+			{
+				"internalType": "uint32",
+				"name": "membersJoined",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint32",
+				"name": "activeMembers",
+				"type": "uint32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "cursor",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "size",
+				"type": "uint256"
+			}
+		],
+		"name": "getPublicPods",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "string[]",
+				"name": "names",
+				"type": "string[]"
+			},
+			{
+				"internalType": "uint8[]",
+				"name": "planTypes",
+				"type": "uint8[]"
+			},
+			{
+				"internalType": "uint16[]",
+				"name": "aprs",
+				"type": "uint16[]"
+			},
+			{
+				"internalType": "uint128[]",
+				"name": "contributions",
+				"type": "uint128[]"
+			},
+			{
+				"internalType": "uint32[]",
+				"name": "joinedCounts",
+				"type": "uint32[]"
+			},
+			{
+				"internalType": "bool[]",
+				"name": "activatedFlags",
+				"type": "bool[]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "nextCursor",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -345,6 +525,19 @@
 		"name": "joinPod",
 		"outputs": [],
 		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			}
+		],
+		"name": "leavePod",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -369,13 +562,13 @@
 			},
 			{
 				"internalType": "bool",
-				"name": "claimed",
+				"name": "closed",
 				"type": "bool"
 			},
 			{
-				"internalType": "bool",
-				"name": "exited",
-				"type": "bool"
+				"internalType": "uint48",
+				"name": "joinedAt",
+				"type": "uint48"
 			},
 			{
 				"internalType": "uint256",
@@ -467,14 +660,29 @@
 		"name": "pods",
 		"outputs": [
 			{
-				"internalType": "uint48",
-				"name": "term",
-				"type": "uint48"
+				"internalType": "address",
+				"name": "creator",
+				"type": "address"
 			},
 			{
-				"internalType": "uint48",
-				"name": "startDeadline",
-				"type": "uint48"
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPublic",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint8",
+				"name": "planType",
+				"type": "uint8"
 			},
 			{
 				"internalType": "uint16",
@@ -482,33 +690,13 @@
 				"type": "uint16"
 			},
 			{
-				"internalType": "uint16",
-				"name": "bonusAprBps",
-				"type": "uint16"
-			},
-			{
-				"internalType": "uint16",
-				"name": "penaltyBps",
-				"type": "uint16"
-			},
-			{
-				"internalType": "uint32",
-				"name": "minMembers",
-				"type": "uint32"
-			},
-			{
-				"internalType": "uint32",
-				"name": "maxMembers",
-				"type": "uint32"
-			},
-			{
-				"internalType": "bool",
-				"name": "allowEarlyExit",
-				"type": "bool"
+				"internalType": "uint48",
+				"name": "term",
+				"type": "uint48"
 			},
 			{
 				"internalType": "uint128",
-				"name": "depositPerMember",
+				"name": "contributionAmount",
 				"type": "uint128"
 			},
 			{
@@ -519,11 +707,6 @@
 			{
 				"internalType": "bool",
 				"name": "cancelled",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "bonusApplied",
 				"type": "bool"
 			},
 			{
@@ -550,11 +733,68 @@
 				"internalType": "uint128",
 				"name": "totalDeposited",
 				"type": "uint128"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
 			},
 			{
-				"internalType": "uint128",
-				"name": "penaltyPool",
-				"type": "uint128"
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "previewMemberInterest",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "publicIndex",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "publicPodIds",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -574,21 +814,26 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "podId",
-				"type": "uint256"
-			}
-		],
-		"name": "refundCancelled",
+		"inputs": [],
+		"name": "renounceOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "renounceOwnership",
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPublic_",
+				"type": "bool"
+			}
+		],
+		"name": "setPodVisibility",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -635,6 +880,29 @@
 	{
 		"inputs": [],
 		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			}
+		],
+		"name": "updatePodMetadata",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

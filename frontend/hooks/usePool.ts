@@ -1,31 +1,48 @@
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther } from 'viem'
-import { contracts } from '../lib/contracts'
+import { contracts, PLAN_TYPES } from '../lib/contracts'
 
 export function usePool() {
   const { writeContract, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const deposit = async ({ planId, amountEth }: { planId: number; amountEth: string }) => {
+  const deposit = async ({ 
+    planType, 
+    customDays = 0, 
+    amountEth 
+  }: { 
+    planType: number; 
+    customDays?: number; 
+    amountEth: string 
+  }) => {
     writeContract({
       ...contracts.savingsPool,
       functionName: 'deposit',
-      args: [BigInt(planId)],
+      args: [planType, customDays],
       value: parseEther(amountEth)
     })
   }
 
-  const claim = async (planId: number) => {
+  const closePosition = async (positionId: bigint) => {
     writeContract({
       ...contracts.savingsPool,
-      functionName: 'claim',
-      args: [BigInt(planId)]
+      functionName: 'closePosition',
+      args: [positionId]
+    })
+  }
+
+  const checkpoint = async (positionId: bigint) => {
+    writeContract({
+      ...contracts.savingsPool,
+      functionName: 'checkpoint',
+      args: [positionId]
     })
   }
 
   return {
     deposit,
-    claim,
+    closePosition,
+    checkpoint,
     isPending,
     isConfirming,
     isSuccess,
@@ -34,11 +51,25 @@ export function usePool() {
   }
 }
 
-export function usePreviewInterest(user: string, planId: number) {
+export function usePreviewInterest(positionId: bigint) {
   return useReadContract({
     ...contracts.savingsPool,
     functionName: 'previewInterest',
-    args: [user, BigInt(planId)],
-    query: { enabled: !!user }
+    args: [positionId],
+    query: { enabled: !!positionId }
+  })
+}
+
+
+export function useUserPositions(
+  userAddress: string, 
+  cursor: bigint = 0n, 
+  size: bigint = 10n
+) {
+  return useReadContract({
+    ...contracts.savingsPool,
+    functionName: 'getUserPositionsPaginated',
+    args: [userAddress, cursor, size],
+    query: { enabled: !!userAddress }
   })
 }
