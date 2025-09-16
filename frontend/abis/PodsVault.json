@@ -210,6 +210,19 @@
 				"internalType": "uint256",
 				"name": "podId",
 				"type": "uint256"
+			}
+		],
+		"name": "PodJoinClosed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
 			},
 			{
 				"indexed": false,
@@ -294,6 +307,19 @@
 			}
 		],
 		"name": "checkpoint",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "podId",
+				"type": "uint256"
+			}
+		],
+		"name": "closeForJoining",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -456,18 +482,7 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "cursor",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "size",
-				"type": "uint256"
-			}
-		],
+		"inputs": [],
 		"name": "getPublicPods",
 		"outputs": [
 			{
@@ -499,16 +514,25 @@
 				"internalType": "uint32[]",
 				"name": "joinedCounts",
 				"type": "uint32[]"
-			},
-			{
-				"internalType": "bool[]",
-				"name": "activatedFlags",
-				"type": "bool[]"
-			},
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "nextCursor",
+				"name": "podId",
 				"type": "uint256"
+			}
+		],
+		"name": "isJoinable",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -707,6 +731,11 @@
 			{
 				"internalType": "bool",
 				"name": "cancelled",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "closedForJoining",
 				"type": "bool"
 			},
 			{

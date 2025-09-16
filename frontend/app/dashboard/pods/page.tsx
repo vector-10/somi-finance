@@ -162,7 +162,7 @@ const JoinPodTab = () => {
   const podExists =
     podDetails &&
     podDetails.creator !== "0x0000000000000000000000000000000000000000";
-  const contributionAmount = podDetails
+    const contributionAmount = podDetails?.contributionAmount 
     ? formatEther(podDetails.contributionAmount)
     : "0";
   const currentMembers = memberCount ? Number(memberCount.membersJoined) : 0;
@@ -339,6 +339,7 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
   const [contributionAmount, setContributionAmount] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [customDays, setCustomDays] = useState("");
+  const [createdPodId, setCreatedPodId] = useState<string | null>(null);
 
   const { createPod, closeForJoining, isPending, isConfirming, isSuccess, error, hash } =
     useVault();
@@ -370,10 +371,12 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
       toast.error("Custom duration must be between 1-150 days");
       return;
     }
-
+  
     try {
       toast.loading("Creating pod...", { id: "create-pod" });
-      await createPod({
+      
+      console.log("About to call createPod...");
+      const result = await createPod({
         name: podName,
         description: podDescription || `${podName} savings pod`,
         isPublic,
@@ -381,21 +384,22 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
         planType: selectedTermData?.planType || 0,
         customDays: selectedTerm === "custom" ? parseInt(customDays) : 0,
       });
+      
+      console.log("CreatePod result:", result);
+      console.log("Pod ID extracted:", result.podId);
+      
+      if (result.podId) {
+        setCreatedPodId(result.podId.toString());
+        toast.success(`Pod created! ID: ${result.podId}`, { id: "create-pod" });
+      }
+      
+      onPodCreated?.();
     } catch (err) {
       console.error("Create pod failed:", err);
       toast.error("Failed to create pod", { id: "create-pod" });
     }
   };
 
-  // Handle success
-  useEffect(() => {
-    if (isSuccess && hash) {
-      toast.success("Pod created successfully! It should appear in the public pods list shortly.", { id: "create-pod" });
-      onPodCreated?.(); // Trigger refetch of public pods
-    }
-  }, [isSuccess, hash, onPodCreated]);
-
-  // Handle error
   useEffect(() => {
     if (error) {
       toast.error(`Error: ${error.message}`, { id: "create-pod" });
@@ -586,6 +590,27 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
             {isPending || isConfirming ? "Creating Pod..." : "Create Pod"}
           </button>
 
+          {createdPodId && (
+          <div className="bg-green-900/20 border border-green-600 rounded-md p-4">
+            <h4 className="text-green-400 font-semibold mb-2">Pod Created Successfully!</h4>
+            <div className="flex items-center justify-between bg-white/10 rounded p-3">
+              <span className="text-white font-mono">Pod ID: #{createdPodId}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(createdPodId);
+                  toast.success("Pod ID copied!");
+                }}
+                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm"
+              >
+                Copy ID
+              </button>
+            </div>
+            <p className="text-green-300 text-sm mt-2">
+              Share this ID with friends to invite them to your pod.
+            </p>
+          </div>
+        )}
+
           {selectedTerm !== "flex" && (
             <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
               ⚠️ Fixed and custom plans: Early exit before maturity forfeits all
@@ -604,6 +629,11 @@ const PublicPodsPreview = () => {
     refetch: () => void;
   };
 
+  console.log("Raw publicPods data:", publicPods);
+  console.log("publicPods type:", typeof publicPods);
+  console.log("publicPods structure:", publicPods ? Object.keys(publicPods) : "no data");
+
+
   const podData = publicPods
     ? {
         ids: publicPods[0] || [],
@@ -614,6 +644,9 @@ const PublicPodsPreview = () => {
         joinedCounts: publicPods[5] || [],
       }
     : null;
+
+    console.log("Processed podData:", podData);
+  console.log("Pod IDs array:", podData?.ids);
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
