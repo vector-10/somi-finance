@@ -25,16 +25,16 @@ const tabs = [
     shortName: 'Deposit'
   },
   { 
-    name: 'Withdraw', 
-    href: '/dashboard/withdraw', 
-    icon: MdCallReceived,
-    shortName: 'Withdraw'
-  },
-  { 
     name: 'Savings Pods', 
     href: '/dashboard/pods', 
     icon: MdGroups,
     shortName: 'Pods'
+  },
+  { 
+    name: 'Withdraw', 
+    href: '/dashboard/withdraw', 
+    icon: MdCallReceived,
+    shortName: 'Withdraw'
   },
   { 
     name: 'Calculate Interest', 
