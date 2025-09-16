@@ -1,10 +1,12 @@
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther } from 'viem'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useConfig } from 'wagmi'
+import { parseEther, decodeEventLog } from 'viem'
+import { waitForTransactionReceipt } from 'wagmi/actions'
 import { contracts } from '../lib/contracts'
 
 export function useVault() {
-  const { writeContract, data: hash, error, isPending } = useWriteContract()
+  const { writeContract, writeContractAsync, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const config = useConfig()
 
   const createPod = async ({
     name,
@@ -21,7 +23,7 @@ export function useVault() {
     planType: number;
     customDays?: number;
   }) => {
-    writeContract({
+    const hash = await writeContractAsync({
       ...contracts.podsVault,
       functionName: 'createPod',
       args: [
@@ -33,6 +35,26 @@ export function useVault() {
         customDays
       ]
     })
+    
+    const receipt = await waitForTransactionReceipt(config, { hash })
+    
+    let podId: bigint | undefined
+    for (const log of receipt.logs) {
+      try {
+        const ev = decodeEventLog({ 
+          abi: contracts.podsVault.abi, 
+          data: log.data, 
+          topics: log.topics, 
+          strict: false 
+        })
+        if (ev.eventName === 'PodCreated' && ev.args && typeof ev.args === 'object' && 'podId' in ev.args) { 
+          podId = ev.args.podId as bigint
+          break 
+        }
+      } catch {}
+    }
+    
+    return { hash, podId }
   }
 
   const joinPod = async (podId: bigint) => {
@@ -68,7 +90,6 @@ export function useVault() {
     })
   }
 
-  // NEW: Close pod for joining
   const closeForJoining = async (podId: bigint) => {
     writeContract({
       ...contracts.podsVault,
@@ -107,7 +128,7 @@ export function useVault() {
     joinPodWithAmount,
     leavePod,
     cancelPod,
-    closeForJoining, // NEW
+    closeForJoining,
     setPodVisibility,
     updatePodMetadata,
     checkpoint,
@@ -128,12 +149,14 @@ export function usePodDetails(podId: bigint) {
   })
 }
 
-// UPDATED: No pagination parameters needed
 export function usePublicPods() {
   return useReadContract({
     ...contracts.podsVault,
     functionName: 'getPublicPods',
-    args: []
+    args: [],
+    query: { 
+      refetchInterval: 10000 
+    }
   })
 }
 
@@ -155,7 +178,6 @@ export function usePreviewMemberInterest(podId: bigint, userAddress: string) {
   })
 }
 
-// NEW: Check if pod is joinable
 export function useIsJoinable(podId: bigint) {
   return useReadContract({
     ...contracts.podsVault,

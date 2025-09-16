@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { formatEther } from "viem";
+import { toast } from "sonner";
 import {
   useVault,
   usePodDetails,
@@ -101,6 +102,10 @@ const JoinPodTab = () => {
     useVault();
 
   const searchPod = () => {
+    if (!podId) {
+      toast.error("Please enter a Pod ID");
+      return;
+    }
     setIsSearching(true);
     setSearchAttempted(true);
     setTimeout(() => setIsSearching(false), 500);
@@ -110,14 +115,30 @@ const JoinPodTab = () => {
     if (!podDetails || !podId) return;
 
     try {
+      toast.loading("Joining pod...", { id: "join-pod" });
       await joinPodWithAmount({
         podId: BigInt(podId),
         amountEth: formatEther(podDetails.contributionAmount),
       });
     } catch (err) {
       console.error("Join pod failed:", err);
+      toast.error("Failed to join pod", { id: "join-pod" });
     }
   };
+
+  // Handle join success
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success("Successfully joined pod! Check your dashboard.", { id: "join-pod" });
+    }
+  }, [isSuccess]);
+
+  // Handle join error
+  useEffect(() => {
+    if (error) {
+      toast.error(`Error: ${error.message}`, { id: "join-pod" });
+    }
+  }, [error]);
 
   const getPlanName = (planType: number) => {
     const types = ["Flex", "Custom", "6 Month", "1 Year", "2 Year"];
@@ -153,10 +174,11 @@ const JoinPodTab = () => {
     'ACTIVE': { bg: 'bg-green-900/50', text: 'text-green-300', border: 'border-green-600' },
     'FULL': { bg: 'bg-blue-900/50', text: 'text-blue-300', border: 'border-blue-600' },
     'CLOSED': { bg: 'bg-gray-900/50', text: 'text-gray-400', border: 'border-gray-600' },
-    'CANCELLED': { bg: 'bg-red-900/50', text: 'text-red-300', border: 'border-red-600' }
+    'CANCELLED': { bg: 'bg-red-900/50', text: 'text-red-300', border: 'border-red-600' },
+    'UNKNOWN': { bg: 'bg-gray-900/50', text: 'text-gray-400', border: 'border-gray-600' }
   };
 
-  const config = statusConfig[status] || statusConfig['UNKNOWN'];
+  const config = statusConfig[status];
   const canJoin = isJoinable && !isPending && !isConfirming;
 
   return (
@@ -238,7 +260,7 @@ const JoinPodTab = () => {
                   <span className="text-gray-400">Members:</span>
                   <p className="text-white font-medium">
                     {currentMembers}/5 joined
-                    {status === 'FILLING' && ` (${3 - currentMembers} more to activate)`}
+                    {status === 'FILLING' && ` (${Math.max(0, 3 - currentMembers)} more to activate)`}
                   </p>
                 </div>
                 <div>
@@ -302,18 +324,6 @@ const JoinPodTab = () => {
                  isPending || isConfirming ? 'Processing...' :
                  `Join Pod (${contributionAmount} STT)`}
               </button>
-
-              {error && (
-                <div className="text-red-400 text-sm mt-2">
-                  Error: {error.message}
-                </div>
-              )}
-
-              {isSuccess && (
-                <div className="text-green-400 text-sm mt-2">
-                  Successfully joined pod! Check your dashboard.
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -322,7 +332,7 @@ const JoinPodTab = () => {
   );
 };
 
-const CreatePodTab = () => {
+const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
   const [selectedTerm, setSelectedTerm] = useState("6m");
   const [podName, setPodName] = useState("");
   const [podDescription, setPodDescription] = useState("");
@@ -349,15 +359,20 @@ const CreatePodTab = () => {
   const selectedTermData = terms.find((term) => term.id === selectedTerm);
 
   const handleCreatePod = async () => {
-    if (!podName || !contributionAmount || parseFloat(contributionAmount) <= 0)
+    if (!podName || !contributionAmount || parseFloat(contributionAmount) <= 0) {
+      toast.error("Please fill in all required fields");
       return;
+    }
     if (
       selectedTerm === "custom" &&
       (!customDays || parseInt(customDays) <= 0 || parseInt(customDays) > 150)
-    )
+    ) {
+      toast.error("Custom duration must be between 1-150 days");
       return;
+    }
 
     try {
+      toast.loading("Creating pod...", { id: "create-pod" });
       await createPod({
         name: podName,
         description: podDescription || `${podName} savings pod`,
@@ -368,8 +383,24 @@ const CreatePodTab = () => {
       });
     } catch (err) {
       console.error("Create pod failed:", err);
+      toast.error("Failed to create pod", { id: "create-pod" });
     }
   };
+
+  // Handle success
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toast.success("Pod created successfully! It should appear in the public pods list shortly.", { id: "create-pod" });
+      onPodCreated?.(); // Trigger refetch of public pods
+    }
+  }, [isSuccess, hash, onPodCreated]);
+
+  // Handle error
+  useEffect(() => {
+    if (error) {
+      toast.error(`Error: ${error.message}`, { id: "create-pod" });
+    }
+  }, [error]);
 
   return (
     <div className="space-y-6">
@@ -555,42 +586,6 @@ const CreatePodTab = () => {
             {isPending || isConfirming ? "Creating Pod..." : "Create Pod"}
           </button>
 
-          {error && (
-            <div className="text-red-400 text-sm mt-2">
-              Error: {error.message}
-            </div>
-          )}
-
-          {isSuccess && hash && (
-            <div className="bg-green-900/20 border border-green-600 rounded-md p-4">
-              <h4 className="text-green-400 font-semibold mb-2">
-                Pod Created Successfully!
-              </h4>
-              <div className="space-y-2">
-                <p className="text-green-300 text-sm">
-                  Your pod has been created and is now accepting members (max 5).
-                  You can close joining manually or it will auto-close when full.
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href={`https://explorer.somnia.network/tx/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-white text-sm font-medium transition-colors text-center"
-                  >
-                    View Transaction
-                  </a>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(window.location.origin + '/dashboard/pods')}
-                    className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm font-medium transition-colors"
-                  >
-                    Share Pod Page
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {selectedTerm !== "flex" && (
             <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
               ⚠️ Fixed and custom plans: Early exit before maturity forfeits all
@@ -604,8 +599,9 @@ const CreatePodTab = () => {
 };
 
 const PublicPodsPreview = () => {
-  const { data: publicPods } = usePublicPods() as {
+  const { data: publicPods, refetch } = usePublicPods() as {
     data: PublicPodsResult | undefined;
+    refetch: () => void;
   };
 
   const podData = publicPods
@@ -621,9 +617,15 @@ const PublicPodsPreview = () => {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-      <h3 className="text-lg font-semibold text-white mb-4">
-        Recent Public Pods
-      </h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-white">Recent Public Pods</h3>
+        <button
+          onClick={() => refetch()}
+          className="text-purple-400 hover:text-purple-300 text-sm"
+        >
+          Refresh
+        </button>
+      </div>
       <div className="space-y-3">
         {podData && podData.ids.length > 0 ? (
           podData.ids.slice(0, 3).map((id: bigint, index: number) => (
@@ -662,6 +664,11 @@ const PublicPodsPreview = () => {
 const Page = () => {
   const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState("join");
+
+  // Get refetch function from public pods
+  const { refetch: refetchPublicPods } = usePublicPods() as {
+    refetch: () => void;
+  };
 
   if (!isConnected) {
     return (
@@ -719,7 +726,7 @@ const Page = () => {
         </div>
 
         <div className="p-6">
-          {activeTab === "join" ? <JoinPodTab /> : <CreatePodTab />}
+          {activeTab === "join" ? <JoinPodTab /> : <CreatePodTab onPodCreated={refetchPublicPods} />}
         </div>
       </div>
     </div>
