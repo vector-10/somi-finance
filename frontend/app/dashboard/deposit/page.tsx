@@ -3,7 +3,25 @@
 import React, { useState } from 'react';
 import { VscLightbulbSparkle } from "react-icons/vsc";
 import { useAccount, useBalance } from 'wagmi';
-import { formatEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
+import { usePool } from '@/hooks/usePool';
+import { PLAN_TYPES } from '@/lib/contracts';
+
+
+interface DepositParams {
+  planType: number;
+  customDays?: number;
+  amountEth: string;
+}
+
+
+interface TransactionState {
+  isPending: boolean;
+  isConfirming: boolean;
+  isSuccess: boolean;
+  error: Error | null;
+  hash: string | undefined;
+}
 
 const WalletBalanceCard = () => {
   const { address } = useAccount();
@@ -40,16 +58,30 @@ const CalculatorTipCard = () => (
 
 const FlexSaveCard = () => {
   const [amount, setAmount] = useState('');
-  const [duration, setDuration] = useState('');
+  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
+
+  const handleDeposit = async () => {
+    if (!amount || parseFloat(amount) <= 0) return;
+    
+    try {
+      await deposit({
+        planType: PLAN_TYPES.FLEX,
+        customDays: 0,
+        amountEth: amount
+      });
+    } catch (err) {
+      console.error('Deposit failed:', err);
+    }
+  };
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-xl font-bold text-white">Flex Save</h3>
-          <p className="text-gray-400 text-sm">Lowest commitment, flexible duration</p>
+          <p className="text-gray-400 text-sm">Withdraw anytime with earned interest</p>
         </div>
-        <div className="px-3 py-1  text-green-600 border border-green-600 rounded-sm text-sm font-bold">
+        <div className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold">
           10% APY
         </div>
       </div>
@@ -64,27 +96,32 @@ const FlexSaveCard = () => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            step="0.01"
+            min="0"
+            disabled={isPending || isConfirming}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           />
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Duration (Days)
-          </label>
-          <input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            placeholder="30"
-            min="1"
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
-        
-        <button className="w-full py-3 bg-purple-600 hover:bg-purple-800 rounded-md text-white font-medium transition-colors">
-          Deposit to Flex Save
+        <button 
+          onClick={handleDeposit}
+          disabled={isPending || isConfirming || !amount || parseFloat(amount) <= 0}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-800 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending || isConfirming ? 'Processing...' : 'Deposit to Flex Save'}
         </button>
+
+        {error && (
+          <div className="text-red-400 text-sm mt-2">
+            Error: {error.message}
+          </div>
+        )}
+        
+        {isSuccess && (
+          <div className="text-green-400 text-sm mt-2">
+            Deposit successful! Check your dashboard.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -93,16 +130,27 @@ const FlexSaveCard = () => {
 const CustomDurationCard = () => {
   const [amount, setAmount] = useState('');
   const [duration, setDuration] = useState('');
+  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
   
-  const calculateAPY = (days: number) => {
-    if (days <= 30) return 12;
-    if (days <= 60) return 14;
-    if (days <= 90) return 16;
-    if (days <= 120) return 18;
-    return 20; 
+  const apy = 12; // Fixed 12% APY for custom duration
+
+  const handleDeposit = async () => {
+    if (!amount || !duration || parseFloat(amount) <= 0 || parseInt(duration) <= 0) return;
+    if (parseInt(duration) > 150) {
+      alert('Maximum duration is 150 days');
+      return;
+    }
+    
+    try {
+      await deposit({
+        planType: PLAN_TYPES.CUSTOM_DAYS,
+        customDays: parseInt(duration),
+        amountEth: amount
+      });
+    } catch (err) {
+      console.error('Deposit failed:', err);
+    }
   };
-  
-  const apy = duration ? calculateAPY(parseInt(duration)) : 12;
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
@@ -111,7 +159,7 @@ const CustomDurationCard = () => {
           <h3 className="text-xl font-bold text-white">Custom Duration</h3>
           <p className="text-gray-400 text-sm">Set your own timeframe (up to 150 days)</p>
         </div>
-        <div className="px-3 py-1 text-green-600 border border-green-600  rounded-sm text-sm font-bold">
+        <div className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold">
           {apy}% APY
         </div>
       </div>
@@ -126,7 +174,10 @@ const CustomDurationCard = () => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            step="0.01"
+            min="0"
+            disabled={isPending || isConfirming}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           />
         </div>
         
@@ -141,7 +192,8 @@ const CustomDurationCard = () => {
             placeholder="90"
             min="1"
             max="150"
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={isPending || isConfirming}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           />
         </div>
         
@@ -149,9 +201,25 @@ const CustomDurationCard = () => {
           Estimated yield: {amount && duration ? (parseFloat(amount) * (apy/100) * (parseInt(duration)/365)).toFixed(4) : '0.0000'} STT
         </div>
         
-        <button className="w-full py-3 bg-purple-600 hover:bg-purple-800 rounded-md text-white font-medium transition-colors">
-          Deposit Custom Duration
+        <button 
+          onClick={handleDeposit}
+          disabled={isPending || isConfirming || !amount || !duration || parseFloat(amount) <= 0 || parseInt(duration) <= 0 || parseInt(duration) > 150}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-800 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending || isConfirming ? 'Processing...' : 'Deposit Custom Duration'}
         </button>
+
+        {error && (
+          <div className="text-red-400 text-sm mt-2">
+            Error: {error.message}
+          </div>
+        )}
+        
+        {isSuccess && (
+          <div className="text-green-400 text-sm mt-2">
+            Deposit successful! Check your dashboard.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -160,14 +228,29 @@ const CustomDurationCard = () => {
 const FixedTermCard = () => {
   const [selectedTerm, setSelectedTerm] = useState('6m');
   const [amount, setAmount] = useState('');
+  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
   
   const terms = [
-    { id: '6m', label: '6 Months', apy: 25, days: 180 },
-    { id: '1y', label: '1 Year', apy: 35, days: 365 },
-    { id: '2y', label: '2 Years', apy: 50, days: 730 }
+    { id: '6m', label: '6 Months', apy: 18, days: 180, planType: PLAN_TYPES.FIXED_6M },
+    { id: '1y', label: '1 Year', apy: 20, days: 365, planType: PLAN_TYPES.FIXED_1Y },
+    { id: '2y', label: '2 Years', apy: 30, days: 730, planType: PLAN_TYPES.FIXED_2Y }
   ];
   
   const selectedTermData = terms.find(term => term.id === selectedTerm);
+
+  const handleDeposit = async () => {
+    if (!amount || parseFloat(amount) <= 0 || !selectedTermData) return;
+    
+    try {
+      await deposit({
+        planType: selectedTermData.planType,
+        customDays: 0,
+        amountEth: amount
+      });
+    } catch (err) {
+      console.error('Deposit failed:', err);
+    }
+  };
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
@@ -176,7 +259,7 @@ const FixedTermCard = () => {
           <h3 className="text-xl font-bold text-white">Fixed Term Savings</h3>
           <p className="text-gray-400 text-sm">Higher yields for longer commitments</p>
         </div>
-        <div className="px-3 py-1 text-green-600 border border-green-600  rounded-sm text-sm font-bold">
+        <div className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold">
           {selectedTermData?.apy}% APY
         </div>
       </div>
@@ -187,7 +270,8 @@ const FixedTermCard = () => {
           <button
             key={term.id}
             onClick={() => setSelectedTerm(term.id)}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+            disabled={isPending || isConfirming}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
               selectedTerm === term.id
                 ? 'bg-purple-600 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -208,7 +292,10 @@ const FixedTermCard = () => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            step="0.01"
+            min="0"
+            disabled={isPending || isConfirming}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           />
         </div>
         
@@ -229,9 +316,30 @@ const FixedTermCard = () => {
           </div>
         </div>
         
-        <button className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors">
-          Lock {selectedTermData?.label} Term
+        <button 
+          onClick={handleDeposit}
+          disabled={isPending || isConfirming || !amount || parseFloat(amount) <= 0}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending || isConfirming ? 'Processing...' : `Lock ${selectedTermData?.label} Term`}
         </button>
+
+        {error && (
+          <div className="text-red-400 text-sm mt-2">
+            Error: {error.message}
+          </div>
+        )}
+        
+        {isSuccess && (
+          <div className="text-green-400 text-sm mt-2">
+            Deposit successful! Check your dashboard.
+          </div>
+        )}
+
+        {/* Warning for fixed terms */}
+        <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
+          ⚠️ Early withdrawal forfeits all interest. You'll only get your principal back.
+        </div>
       </div>
     </div>
   );

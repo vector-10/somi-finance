@@ -2,10 +2,68 @@
 
 import React from 'react';
 import { useAccount } from 'wagmi';
+import { formatEther } from 'viem';
+import { useUserPositions, usePreviewInterest, usePool } from '@/hooks/usePool';
+
+
+interface UserPosition {
+  id: bigint;
+  planType: number;
+  principal: bigint;
+  start: number;
+  term: number;
+  aprBps: number;
+  closed: boolean;
+  receiptId: bigint;
+}
+
+
+interface UserPositionsResult {
+  0: UserPosition[];
+  1: bigint; 
+}
 
 const TotalClaimableCard = () => {
-  const totalClaimable = 156.75;
-  const totalLocked = 2593.25;
+  const { address } = useAccount();
+  const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
+
+  const userPositions = positions?.[0] || [];
+  
+
+  const totalClaimable = userPositions.reduce((sum, pos) => {
+    if (pos.closed) return sum;
+    const now = Date.now() / 1000;
+    const isMatured = pos.term > 0 && now >= pos.start + pos.term;
+    const isFlexOrCustom = pos.planType === 0 || pos.planType === 1;
+    
+    if (isMatured || isFlexOrCustom) {
+      const principal = parseFloat(formatEther(pos.principal));
+      const apy = pos.aprBps / 10000;
+      const elapsed = Math.min(now - pos.start, pos.term || (now - pos.start));
+      const interest = principal * apy * (elapsed / (365 * 24 * 60 * 60));
+      return sum + principal + interest;
+    }
+    return sum;
+  }, 0);
+
+  const totalLocked = userPositions.reduce((sum, pos) => {
+    if (pos.closed) return sum;
+    const now = Date.now() / 1000;
+    const isMatured = pos.term > 0 && now >= pos.start + pos.term;
+    const isFlexOrCustom = pos.planType === 0 || pos.planType === 1;
+    
+    if (!isMatured && !isFlexOrCustom) {
+      return sum + parseFloat(formatEther(pos.principal));
+    }
+    return sum;
+  }, 0);
+
+  const { closePosition, isPending } = usePool();
+
+  const handleClaimAll = async () => {
+    console.log('Claim all functionality would iterate through claimable positions');
+  };
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
@@ -22,31 +80,72 @@ const TotalClaimableCard = () => {
       </div>
       
       {totalClaimable > 0 && (
-        <button className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors">
-          Claim All Available ({totalClaimable.toFixed(2)} STT)
+        <button 
+          onClick={handleClaimAll}
+          disabled={isPending}
+          className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
+        >
+          {isPending ? 'Processing...' : `Claim All Available (${totalClaimable.toFixed(2)} STT)`}
         </button>
       )}
     </div>
   );
 };
 
-const SavingsPlanCard = ({ 
-  planType, 
-  depositAmount, 
-  earnedRewards, 
-  timeRemaining, 
-  status, 
-  progress, 
-  claimableAmount 
-}: {
-  planType: string;
-  depositAmount: number;
-  earnedRewards: number;
-  timeRemaining: string;
-  status: 'claimable' | 'locked' | 'partial';
-  progress: number;
-  claimableAmount?: number;
-}) => {
+const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
+  const { closePosition, isPending, isConfirming, isSuccess, error } = usePool();
+  const { data: interest } = usePreviewInterest(position.id);
+  
+  const getPlanName = (planType: number) => {
+    const types = ['Flex Save', 'Custom Duration', '6 Month', '1 Year', '2 Year'];
+    return types[planType] || 'Unknown';
+  };
+
+  const getStatus = (position: UserPosition) => {
+    if (position.closed) return 'claimed';
+    
+    const now = Date.now() / 1000;
+    const isMatured = position.term > 0 && now >= position.start + position.term;
+    const isFlexOrCustom = position.planType === 0 || position.planType === 1;
+    
+    if (isMatured || isFlexOrCustom) return 'claimable';
+    if (isFlexOrCustom) return 'partial'; 
+    return 'locked';
+  };
+
+  const getTimeRemaining = (position: UserPosition) => {
+    if (position.closed) return 'Claimed';
+    if (position.planType === 0) return 'Flexible'; 
+    
+    const now = Date.now() / 1000;
+    const maturity = position.start + position.term;
+    
+    if (now >= maturity) return 'Matured';
+    
+    const remaining = maturity - now;
+    const days = Math.floor(remaining / 86400);
+    if (days > 365) return `${Math.floor(days / 365)} years left`;
+    if (days > 30) return `${Math.floor(days / 30)} months left`;
+    return `${days} days left`;
+  };
+
+  const getProgress = (position: UserPosition) => {
+    if (position.closed) return 100;
+    if (position.planType === 0) return 50; 
+    
+    const now = Date.now() / 1000;
+    const elapsed = now - position.start;
+    const progress = Math.min((elapsed / position.term) * 100, 100);
+    return Math.floor(progress);
+  };
+
+  const status = getStatus(position);
+  const timeRemaining = getTimeRemaining(position);
+  const progress = getProgress(position);
+  const depositAmount = parseFloat(formatEther(position.principal));
+  const earnedRewards = interest ? parseFloat(formatEther(interest)) : 0;
+  const claimableAmount = status === 'claimable' ? depositAmount + earnedRewards : earnedRewards;
+
   const statusConfig = {
     claimable: {
       bgColor: 'bg-green-900/50',
@@ -67,18 +166,35 @@ const SavingsPlanCard = ({
       textColor: 'text-yellow-300',
       borderColor: 'border-yellow-600',
       buttonBg: 'bg-purple-600 hover:bg-purple-700',
-      buttonText: 'Claim Interest Only'
+      buttonText: 'Claim Interest'
+    },
+    claimed: {
+      bgColor: 'bg-blue-900/50',
+      textColor: 'text-blue-300',
+      borderColor: 'border-blue-600',
+      buttonBg: 'bg-gray-600 cursor-not-allowed',
+      buttonText: 'Already Claimed'
     }
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status as keyof typeof statusConfig];
+
+  const handleClaim = async () => {
+    if (status === 'locked' || status === 'claimed') return;
+    
+    try {
+      await closePosition(position.id);
+    } catch (err) {
+      console.error('Claim failed:', err);
+    }
+  };
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">{planType} Savings Plan</h3>
-          <p className="text-gray-400 text-sm">Deposited: {depositAmount.toFixed(2)} STT</p>
+          <h3 className="text-lg font-semibold text-white">{getPlanName(position.planType)} Plan</h3>
+          <p className="text-gray-400 text-sm">Deposited: {depositAmount.toFixed(4)} STT</p>
         </div>
         <span className={`px-3 py-1 text-xs rounded-md border ${config.bgColor} ${config.textColor} ${config.borderColor}`}>
           {status.toUpperCase()}
@@ -98,21 +214,23 @@ const SavingsPlanCard = ({
         </div>
 
         {/* Progress Bar */}
-        <div>
-          <div className="flex justify-between text-sm text-gray-400 mb-1">
-            <span>Progress</span>
-            <span>{progress}%</span>
+        {position.planType !== 0 && (
+          <div>
+            <div className="flex justify-between text-sm text-gray-400 mb-1">
+              <span>Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" 
+                style={{width: `${progress}%`}}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" 
-              style={{width: `${progress}%`}}
-            ></div>
-          </div>
-        </div>
+        )}
 
         {/* Claimable Amount */}
-        {(status === 'claimable' || status === 'partial') && claimableAmount && (
+        {(status === 'claimable' || status === 'partial') && claimableAmount > 0 && (
           <div className="bg-white/10 rounded-md p-3">
             <p className="text-sm text-gray-400">Available to Claim</p>
             <p className="text-2xl font-bold text-green-400">{claimableAmount.toFixed(4)} STT</p>
@@ -121,20 +239,37 @@ const SavingsPlanCard = ({
 
         {/* Action Button */}
         <button 
-          className={`w-full py-3 rounded-md text-white font-medium transition-colors ${config.buttonBg}`}
-          disabled={status === 'locked'}
+          onClick={handleClaim}
+          disabled={status === 'locked' || status === 'claimed' || isPending || isConfirming}
+          className={`w-full py-3 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${config.buttonBg}`}
         >
-          {config.buttonText}
-          {(status === 'claimable' || status === 'partial') && claimableAmount && 
+          {isPending || isConfirming ? 'Processing...' : config.buttonText}
+          {(status === 'claimable' || status === 'partial') && claimableAmount > 0 && 
             ` (${claimableAmount.toFixed(4)} STT)`
           }
         </button>
 
         {/* Early Exit Option for Locked Plans */}
         {status === 'locked' && (
-          <button className="w-full py-2 bg-red-600/20 border border-red-600 text-red-400 rounded-md text-sm font-medium hover:bg-red-600/30 transition-colors">
-            Early Exit (10% Penalty)
+          <button 
+            onClick={handleClaim}
+            disabled={isPending || isConfirming}
+            className="w-full py-2 bg-red-600/20 border border-red-600 text-red-400 rounded-md text-sm font-medium hover:bg-red-600/30 transition-colors disabled:opacity-50"
+          >
+            {isPending || isConfirming ? 'Processing...' : 'Early Exit (Forfeit Interest)'}
           </button>
+        )}
+
+        {error && (
+          <div className="text-red-400 text-sm mt-2">
+            Error: {error.message}
+          </div>
+        )}
+        
+        {isSuccess && (
+          <div className="text-green-400 text-sm mt-2">
+            Transaction successful! Check your dashboard.
+          </div>
         )}
       </div>
     </div>
@@ -146,45 +281,21 @@ const EmptyState = () => (
     <div className="text-6xl mb-4">📊</div>
     <h3 className="text-xl font-bold text-gray-300 mb-2">No Active Savings Plans</h3>
     <p className="text-gray-500 mb-6">You don't have any active savings plans to withdraw from.</p>
-    <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors">
+    <a 
+      href="/dashboard/deposit"
+      className="inline-flex px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors"
+    >
       Start Saving Now
-    </button>
+    </a>
   </div>
 );
 
 const Page = () => {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
+  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
 
-  // Mock data - replace with real contract calls
-  const mockSavingsPlans = [
-    {
-      planType: "6 Month",
-      depositAmount: 500.00,
-      earnedRewards: 45.2341,
-      timeRemaining: "Completed",
-      status: 'claimable' as const,
-      progress: 100,
-      claimableAmount: 545.2341
-    },
-    {
-      planType: "12 Month", 
-      depositAmount: 1000.00,
-      earnedRewards: 98.7654,
-      timeRemaining: "3 months left",
-      status: 'partial' as const,
-      progress: 75,
-      claimableAmount: 98.7654
-    },
-    {
-      planType: "24 Month",
-      depositAmount: 1500.00,
-      earnedRewards: 12.7500,
-      timeRemaining: "18 months left",
-      status: 'locked' as const,
-      progress: 25,
-      claimableAmount: 0
-    }
-  ];
+  const userPositions = positions?.[0] || [];
 
   if (!isConnected) {
     return (
@@ -198,6 +309,17 @@ const Page = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading your savings plans...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -206,7 +328,7 @@ const Page = () => {
         <p className="text-gray-400">Manage your active savings plans and claim available rewards</p>
       </div>
 
-      {mockSavingsPlans.length > 0 ? (
+      {userPositions.length > 0 ? (
         <>
           {/* Summary Card */}
           <TotalClaimableCard />
@@ -215,8 +337,8 @@ const Page = () => {
           <div>
             <h2 className="text-xl font-bold text-white mb-4">Your Savings Plans</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {mockSavingsPlans.map((plan, index) => (
-                <SavingsPlanCard key={index} {...plan} />
+              {userPositions.map((position, index) => (
+                <SavingsPlanCard key={index} position={position} />
               ))}
             </div>
           </div>
@@ -226,8 +348,8 @@ const Page = () => {
             <h3 className="text-lg font-semibold text-white mb-3">Withdrawal Information</h3>
             <div className="space-y-2 text-sm text-gray-300">
               <p>• <strong>Claimable:</strong> Full deposit + rewards available for immediate withdrawal</p>
-              <p>• <strong>Partial:</strong> Earned interest can be claimed, principal remains locked</p>
-              <p>• <strong>Locked:</strong> Funds locked until maturity, early exit incurs 10% penalty</p>
+              <p>• <strong>Partial:</strong> Earned interest can be claimed for Flex/Custom plans, principal remains</p>
+              <p>• <strong>Locked:</strong> Fixed plans locked until maturity, early exit forfeits all interest</p>
             </div>
           </div>
         </>

@@ -1,10 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAccount, useBalance } from 'wagmi';
 import { CiBadgeDollar } from "react-icons/ci";
+import Link from "next/link";
 import { BiSolidBadgeDollar } from "react-icons/bi";
 import { formatEther } from 'viem';
+import { useUserPositions, usePreviewInterest } from '../../hooks/usePool';
+import { usePublicPods } from '../../hooks/useVault';
+
+
+interface UserPositionsResult {
+  0: Array<{
+    id: bigint;
+    planType: number;
+    principal: bigint;
+    start: number;
+    term: number;
+    aprBps: number;
+    closed: boolean;
+    receiptId: bigint;
+  }>;
+  1: bigint; 
+}
+
 
 const WalletOverviewCard = () => {
   const { address } = useAccount();
@@ -21,129 +40,200 @@ const WalletOverviewCard = () => {
           <p className="text-gray-400 text-sm mt-1">~$1,247.50 USD</p>
         </div>
         <div className="flex space-x-2">
-          <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors">
+          <Link href="/dashboard/deposit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors">
             Deposit
-          </button>
-          <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm font-medium transition-colors">
+          </Link>
+          <Link href="/dashboard/withdraw" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm font-medium transition-colors">
             Withdraw
-          </button>
+          </Link>
         </div>
       </div>
     </div>
   );
 };
 
-const SavingsSummaryCard = () => (
-  <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-    <h3 className="text-lg font-semibold text-white mb-4">Active Savings</h3>
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <p className="text-2xl font-bold text-white">2,750.00</p>
-        <p className="text-gray-400 text-sm">Total STT Locked</p>
+
+const SavingsSummaryCard = () => {
+  const { address } = useAccount();
+  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
+  
+  const totalLocked = positions && positions[0] ? 
+    positions[0].reduce((sum: number, pos: any) => 
+      pos.closed ? sum : sum + parseFloat(formatEther(pos.principal)), 0
+    ) : 0;
+
+  const totalEarnings = positions && positions[0] ? 
+    positions[0].reduce((sum: number, pos: any) => {
+      if (pos.closed) return sum;
+      return sum + 100; 
+    }, 0) : 0;
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
+      <h3 className="text-lg font-semibold text-white mb-4">Active Savings</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-2xl font-bold text-white">{totalLocked.toFixed(2)}</p>
+          <p className="text-gray-400 text-sm">Total STT Locked</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-green-400">{totalEarnings.toFixed(2)}</p>
+          <p className="text-gray-400 text-sm">Projected Earnings</p>
+        </div>
       </div>
-      <div>
-        <p className="text-2xl font-bold text-green-400">156.75</p>
-        <p className="text-gray-400 text-sm">Projected Earnings</p>
-      </div>
+      {totalLocked > 0 && (
+        <div className="mt-4 p-3 bg-green-900/20 border border-green-700 rounded-md">
+          <p className="text-green-300 text-sm font-medium">Active positions found</p>
+          <p className="text-green-400 font-semibold">Check withdraw page to claim</p>
+        </div>
+      )}
     </div>
-    <div className="mt-4 p-3 bg-green-900/20 border border-green-700 rounded-md">
-      <p className="text-green-300 text-sm font-medium">Next claim available in 8 days</p>
-      <p className="text-green-400 font-semibold">12.45 STT ready to claim</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const SaverLevelCard = () => {
-    const level = "Gold";
-    const totalSaved = 2750;
-    const nextLevelRequirement = 5000;
-    
-    const tierIcons = {
-      Bronze: <CiBadgeDollar className="w-12 h-12 text-orange-600" />,
-      Silver: <CiBadgeDollar className="w-12 h-12 text-gray-400" />,
-      Gold: <BiSolidBadgeDollar className="w-20 h-20 text-yellow-500" />,
-      Diamond: <CiBadgeDollar className="w-12 h-12 text-blue-400" />
-    };
-    
-    return (
-      <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Saver Level</h3>
-          <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
-            {level}
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-center mb-4">
-          {tierIcons[level as keyof typeof tierIcons]}
-          <p className="text-xl font-bold text-yellow-400 mt-2">{totalSaved} STT</p>
-          <p className="text-gray-400 text-sm">Total Saved</p>
-        </div>
-        
-        <div className="text-center">
-          <p className="text-yellow-400 text-sm font-medium">Gold Tier Benefits:</p>
-          <p className="text-yellow-300 text-sm">+0.5% APY bonus on all plans</p>
-          <p className="text-gray-400 text-xs mt-1">
-            {nextLevelRequirement - totalSaved} STT until Diamond tier
-          </p>
-        </div>
-      </div>
-    );
-  };
+  const { address } = useAccount();
+  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
 
-const StreakCard = () => (
-  <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-    <h3 className="text-lg font-semibold text-white mb-2">Savings Streak</h3>
-    <div className="flex items-center justify-center space-x-4 min-h-[12rem]">
-      <div className="text-center">
-        <p className="text-3xl font-bold text-green-400">127</p>
-        <p className="text-gray-400 text-sm">Days Active</p>
+  const totalSaved = positions && positions[0] ? 
+    positions[0].reduce((sum: number, pos: any) => 
+      sum + parseFloat(formatEther(pos.principal)), 0
+    ) : 0;
+    
+  const getLevel = (amount: number) => {
+    if (amount >= 5000) return "Diamond";
+    if (amount >= 2500) return "Gold"; 
+    if (amount >= 1000) return "Silver";
+    return "Bronze";
+  };
+  
+  const level = getLevel(totalSaved);
+  const nextTier = level === "Diamond" ? 5000 : 
+                   level === "Gold" ? 5000 : 
+                   level === "Silver" ? 2500 : 1000;
+  
+  const tierIcons = {
+    Bronze: <CiBadgeDollar className="w-12 h-12 text-orange-600" />,
+    Silver: <CiBadgeDollar className="w-12 h-12 text-gray-400" />,
+    Gold: <BiSolidBadgeDollar className="w-20 h-20 text-yellow-500" />,
+    Diamond: <CiBadgeDollar className="w-12 h-12 text-blue-400" />
+  };
+  
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white">Saver Level</h3>
+        <div className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-md text-sm font-bold">
+          {level}
+        </div>
       </div>
+      
+      <div className="flex flex-col items-center mb-4">
+        {tierIcons[level as keyof typeof tierIcons]}
+        <p className="text-xl font-bold text-yellow-400 mt-2">{totalSaved.toFixed(0)} STT</p>
+        <p className="text-gray-400 text-sm">Total Saved</p>
+      </div>
+      
       <div className="text-center">
-        <p className="text-xl font-bold text-green-300">+2.5%</p>
-        <p className="text-gray-400 text-sm">Streak Bonus</p>
+        <p className="text-yellow-400 text-sm font-medium">{level} Tier Benefits:</p>
+        <p className="text-yellow-300 text-sm">+{level === "Diamond" ? "2" : level === "Gold" ? "0.5" : "0"}% APY bonus</p>
+        {level !== "Diamond" && (
+          <p className="text-gray-400 text-xs mt-1">
+            {nextTier - totalSaved} STT until next tier
+          </p>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const SoloPlanCard = ({ planType, amount, timeLeft, apy, status, progress }: {
-  planType: string;
-  amount: string;
-  timeLeft: string;
-  apy: string;
-  status: 'active' | 'pending' | 'claimable';
-  progress: number;
+const StreakCard = () => {
+  const { address } = useAccount();
+  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
+  
+  const oldestPosition = positions && positions[0] && positions[0].length > 0 ? 
+    positions[0].reduce((oldest: any, pos: any) => 
+      !pos.closed && pos.start < oldest.start ? pos : oldest, 
+      positions[0][0]
+    ) : null;
+    
+  const streakDays = oldestPosition ? 
+    Math.floor((Date.now() / 1000 - Number(oldestPosition.start)) / 86400) : 0;
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
+      <h3 className="text-lg font-semibold text-white mb-2">Savings Streak</h3>
+      <div className="flex items-center justify-center space-x-4 min-h-[12rem]">
+        <div className="text-center">
+          <p className="text-3xl font-bold text-green-400">{streakDays}</p>
+          <p className="text-gray-400 text-sm">Days Active</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xl font-bold text-green-300">+{Math.min(streakDays * 0.01, 5).toFixed(1)}%</p>
+          <p className="text-gray-400 text-sm">Streak Bonus</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SoloPlanCard = ({ position, onClaim }: {
+  position: any;
+  onClaim?: (positionId: bigint) => void;
 }) => {
+  const { data: interest } = usePreviewInterest(position.id);
+  const interestAmount = interest && typeof interest === 'bigint' ? formatEther(interest) : '0';
+  
+  const getPlanName = (planType: number) => {
+    const types = ['Flex', 'Custom', '6 Month', '1 Year', '2 Year'];
+    return types[planType] || 'Unknown';
+  };
+  
+  const getStatus = (position: any) => {
+    if (position.closed) return 'claimed';
+    if (position.planType === 0 || position.planType === 1) return 'active'; 
+    if (position.term > 0) {
+      const maturity = Number(position.start) + Number(position.term);
+      return Date.now() / 1000 >= maturity ? 'claimable' : 'active';
+    }
+    return 'active';
+  };
+  
+  const status = getStatus(position);
   const statusStyles = {
     active: 'bg-green-900/50 text-green-300 border-green-600',
-    pending: 'bg-yellow-900/50 text-yellow-300 border-yellow-600',
-    claimable: 'bg-purple-900/50 text-purple-300 border-purple-600'
+    claimable: 'bg-purple-900/50 text-purple-300 border-purple-600',
+    claimed: 'bg-gray-900/50 text-gray-400 border-gray-600'
+  };
+
+  const getAPY = (planType: number) => {
+    const apys = ['10%', '12%', '18%', '20%', '30%'];
+    return apys[planType] || '0%';
   };
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h4 className="font-semibold text-white">{planType} Plan</h4>
-          <p className="text-gray-400 text-sm">{amount} STT</p>
+          <h4 className="font-semibold text-white">{getPlanName(position.planType)} Plan</h4>
+          <p className="text-gray-400 text-sm">{formatEther(position.principal)} STT</p>
         </div>
-        <span className={`px-2 py-1 text-xs rounded-md border ${statusStyles[status]}`}>
+        <span className={`px-2 py-1 text-xs rounded-md border ${statusStyles[status as keyof typeof statusStyles]}`}>
           {status.toUpperCase()}
         </span>
       </div>
       <div className="flex justify-between text-sm text-gray-400 mb-3">
-        <span>APY: {apy}</span>
-        <span>{timeLeft}</span>
+        <span>APY: {getAPY(position.planType)}</span>
+        <span>Interest: {interestAmount} STT</span>
       </div>
-      <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
-        <div 
-          className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" 
-          style={{width: `${progress}%`}}
-        ></div>
-      </div>
-      {status === 'claimable' && (
-        <button className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors">
+      {status === 'claimable' && onClaim && (
+        <button 
+          onClick={() => onClaim(position.id)}
+          className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors"
+        >
           Claim Rewards
         </button>
       )}
@@ -151,75 +241,97 @@ const SoloPlanCard = ({ planType, amount, timeLeft, apy, status, progress }: {
   );
 };
 
-const PodCard = ({ podName, members, target, yourContribution, podApy, status }: {
-  podName: string;
-  members: string;
-  target: string;
-  yourContribution: string;
-  podApy: string;
-  status: string;
-}) => (
-  <div className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
-    <div className="flex justify-between items-start mb-3">
-      <div>
-        <h4 className="font-semibold text-white">{podName}</h4>
-        <p className="text-gray-400 text-sm">{members} • Target: {target} STT</p>
-      </div>
-      <span className="px-2 py-1 bg-purple-900 text-purple-300 border border-purple-600 rounded-md text-xs">
-        {status}
-      </span>
-    </div>
-    <div className="space-y-2 text-sm">
-      <div className="flex justify-between">
-        <span className="text-gray-400">Your share:</span>
-        <span className="text-white">{yourContribution} STT</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-gray-400">Pod APY:</span>
-        <span className="text-purple-300">{podApy}</span>
-      </div>
-    </div>
-  </div>
-);
-
 const SoloPlansSection = () => {
-    const plans = [
-      { planType: "6 Month", amount: "500.00", timeLeft: "2 months left", apy: "8.5%", status: "active" as const, progress: 67 },
-      { planType: "12 Month", amount: "750.00", timeLeft: "8 months left", apy: "12.0%", status: "active" as const, progress: 33 },
-      { planType: "24 Month", amount: "1,500.00", timeLeft: "Ready to claim!", apy: "18.0%", status: "claimable" as const, progress: 100 },
-      { planType: "6 Month", amount: "300.00", timeLeft: "4 months left", apy: "8.5%", status: "active" as const, progress: 45 },
-    ];
+  const { address } = useAccount();
+  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const positions = rawPositions as UserPositionsResult | undefined;
   
+  const userPositions = positions && positions[0] ? positions[0] : [];
+
+  if (isLoading) {
     return (
       <div className="bg-white/5 border border-white/10 rounded-md p-6 min-h-[280px] backdrop-blur">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
-        </div>
-        <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-          {plans.map((plan, index) => (
-            <SoloPlanCard key={index} {...plan} />
-          ))}
+        <div className="flex items-center justify-center h-full">
+          <p className="text-gray-400">Loading your positions...</p>
         </div>
       </div>
     );
-  };
-
-const SavingsPodsSection = () => {
-  const pods = [
-    { podName: "DeFi Builders Pod", members: "9/10 members", target: "10,000", yourContribution: "500", podApy: "15.0%", status: "ACTIVE" },
-    { podName: "Diamond Hands Pod", members: "5/8 members", target: "5,000", yourContribution: "250", podApy: "20.0%", status: "FILLING" },
-    { podName: "Whale Savers Pod", members: "12/15 members", target: "50,000", yourContribution: "1,000", podApy: "25.0%", status: "ACTIVE" },
-  ];
+  }
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 min-h-[280px] backdrop-blur">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-white">Savings Pods</h2>
+        <h2 className="text-xl font-bold text-white">Solo Savings Plans</h2>
       </div>
       <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-        {pods.map((pod, index) => (
-          <PodCard key={index} {...pod} />
-        ))}
+        {userPositions.length > 0 ? (
+          userPositions.map((position: any, index: number) => (
+            <SoloPlanCard key={index} position={position} />
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No active positions yet</p>
+            <p className="text-sm text-gray-500">Visit the deposit page to start saving</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SavingsPodsSection = () => {
+  const { data: publicPods } = usePublicPods(BigInt(0), BigInt(5));
+  
+  const pods = publicPods as any[];
+  const podData = pods ? {
+    ids: pods[0] || [],
+    names: pods[1] || [],
+    planTypes: pods[2] || [],
+    aprs: pods[3] || [],
+    contributions: pods[4] || [],
+    joinedCounts: pods[5] || [],
+    activated: pods[6] || []
+  } : null;
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-md p-6 min-h-[280px] backdrop-blur">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Public Savings Pods</h2>
+      </div>
+      <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+        {podData && podData.ids.length > 0 ? (
+          podData.ids.map((id: bigint, index: number) => (
+            <div key={index} className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h4 className="font-semibold text-white">{podData.names[index]}</h4>
+                  <p className="text-gray-400 text-sm">{podData.joinedCounts[index].toString()} members</p>
+                </div>
+                <span className={`px-2 py-1 text-xs rounded-md border ${
+                  podData.activated[index] ? 'bg-green-900/50 text-green-300 border-green-600' : 
+                  'bg-yellow-900/50 text-yellow-300 border-yellow-600'
+                }`}>
+                  {podData.activated[index] ? 'ACTIVE' : 'FILLING'}
+                </span>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Contribution:</span>
+                  <span className="text-white">{formatEther(podData.contributions[index])} STT</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">APY:</span>
+                  <span className="text-purple-300">{(Number(podData.aprs[index]) / 100)}%</span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No public pods available</p>
+            <p className="text-sm text-gray-500">Create one or join via Pod ID</p>
+          </div>
+        )}
       </div>
     </div>
   );
