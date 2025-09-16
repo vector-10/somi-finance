@@ -5,7 +5,7 @@ import { contracts } from '../lib/contracts'
 export function useVault() {
   const { writeContract, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
-  
+
   const createPod = async ({
     name,
     description,
@@ -36,7 +36,6 @@ export function useVault() {
   }
 
   const joinPod = async (podId: bigint) => {
-
     writeContract({
       ...contracts.podsVault,
       functionName: 'joinPod',
@@ -53,7 +52,6 @@ export function useVault() {
     })
   }
 
-
   const leavePod = async (podId: bigint) => {
     writeContract({
       ...contracts.podsVault,
@@ -61,7 +59,6 @@ export function useVault() {
       args: [podId]
     })
   }
-
 
   const cancelPod = async (podId: bigint) => {
     writeContract({
@@ -71,6 +68,14 @@ export function useVault() {
     })
   }
 
+  // NEW: Close pod for joining
+  const closeForJoining = async (podId: bigint) => {
+    writeContract({
+      ...contracts.podsVault,
+      functionName: 'closeForJoining',
+      args: [podId]
+    })
+  }
 
   const setPodVisibility = async (podId: bigint, isPublic: boolean) => {
     writeContract({
@@ -88,7 +93,6 @@ export function useVault() {
     })
   }
 
-
   const checkpoint = async (podId: bigint) => {
     writeContract({
       ...contracts.podsVault,
@@ -103,6 +107,7 @@ export function useVault() {
     joinPodWithAmount,
     leavePod,
     cancelPod,
+    closeForJoining, // NEW
     setPodVisibility,
     updatePodMetadata,
     checkpoint,
@@ -114,7 +119,6 @@ export function useVault() {
   }
 }
 
-
 export function usePodDetails(podId: bigint) {
   return useReadContract({
     ...contracts.podsVault,
@@ -124,15 +128,14 @@ export function usePodDetails(podId: bigint) {
   })
 }
 
-
-export function usePublicPods(cursor: bigint = 0n, size: bigint = 10n) {
+// UPDATED: No pagination parameters needed
+export function usePublicPods() {
   return useReadContract({
     ...contracts.podsVault,
     functionName: 'getPublicPods',
-    args: [cursor, size]
+    args: []
   })
 }
-
 
 export function usePodMemberCount(podId: bigint) {
   return useReadContract({
@@ -149,5 +152,15 @@ export function usePreviewMemberInterest(podId: bigint, userAddress: string) {
     functionName: 'previewMemberInterest',
     args: [podId, userAddress],
     query: { enabled: !!podId && !!userAddress }
+  })
+}
+
+// NEW: Check if pod is joinable
+export function useIsJoinable(podId: bigint) {
+  return useReadContract({
+    ...contracts.podsVault,
+    functionName: 'isJoinable',
+    args: [podId],
+    query: { enabled: !!podId }
   })
 }

@@ -9,7 +9,6 @@ import { formatEther } from 'viem';
 import { useUserPositions, usePreviewInterest } from '../../hooks/usePool';
 import { usePublicPods } from '../../hooks/useVault';
 
-
 interface UserPositionsResult {
   0: Array<{
     id: bigint;
@@ -21,9 +20,17 @@ interface UserPositionsResult {
     closed: boolean;
     receiptId: bigint;
   }>;
-  1: bigint; 
+  1: bigint;
 }
 
+interface PublicPodsResult {
+  0: bigint[];
+  1: string[];
+  2: number[];
+  3: number[];
+  4: bigint[];
+  5: number[];
+}
 
 const WalletOverviewCard = () => {
   const { address } = useAccount();
@@ -52,22 +59,41 @@ const WalletOverviewCard = () => {
   );
 };
 
-
 const SavingsSummaryCard = () => {
   const { address } = useAccount();
   const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   
-  const totalLocked = positions && positions[0] ? 
-    positions[0].reduce((sum: number, pos: any) => 
-      pos.closed ? sum : sum + parseFloat(formatEther(pos.principal)), 0
-    ) : 0;
+  const userPositions = positions?.[0] || [];
+  
+  const totalLocked = userPositions.reduce((sum: number, pos) => 
+    pos.closed ? sum : sum + parseFloat(formatEther(pos.principal)), 0
+  );
 
-  const totalEarnings = positions && positions[0] ? 
-    positions[0].reduce((sum: number, pos: any) => {
-      if (pos.closed) return sum;
-      return sum + 100; 
-    }, 0) : 0;
+  const [totalEarnings, setTotalEarnings] = React.useState(0);
+
+  React.useEffect(() => {
+    const calculateEarnings = async () => {
+      if (!userPositions.length) {
+        setTotalEarnings(0);
+        return;
+      }
+
+      let earnings = 0;
+      for (const pos of userPositions) {
+        if (!pos.closed) {
+          const interest = await fetch(`/api/preview-interest?positionId=${pos.id}`).catch(() => null);
+          if (interest) {
+            const data = await interest.json();
+            earnings += parseFloat(formatEther(data.interest || BigInt(0)));
+          }
+        }
+      }
+      setTotalEarnings(earnings);
+    };
+
+    calculateEarnings();
+  }, [userPositions]);
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
@@ -78,8 +104,8 @@ const SavingsSummaryCard = () => {
           <p className="text-gray-400 text-sm">Total STT Locked</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-green-400">{totalEarnings.toFixed(2)}</p>
-          <p className="text-gray-400 text-sm">Projected Earnings</p>
+          <p className="text-2xl font-bold text-green-400">{totalEarnings.toFixed(4)}</p>
+          <p className="text-gray-400 text-sm">Current Earnings</p>
         </div>
       </div>
       {totalLocked > 0 && (
@@ -94,13 +120,12 @@ const SavingsSummaryCard = () => {
 
 const SaverLevelCard = () => {
   const { address } = useAccount();
-  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
 
-  const totalSaved = positions && positions[0] ? 
-    positions[0].reduce((sum: number, pos: any) => 
-      sum + parseFloat(formatEther(pos.principal)), 0
-    ) : 0;
+  const totalSaved = positions?.[0]?.reduce((sum: number, pos) => 
+    sum + parseFloat(formatEther(pos.principal)), 0
+  ) || 0;
     
   const getLevel = (amount: number) => {
     if (amount >= 5000) return "Diamond";
@@ -151,16 +176,18 @@ const SaverLevelCard = () => {
 
 const StreakCard = () => {
   const { address } = useAccount();
-  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   
-  const oldestPosition = positions && positions[0] && positions[0].length > 0 ? 
-    positions[0].reduce((oldest: any, pos: any) => 
+  const userPositions = positions?.[0] || [];
+  
+  const oldestPosition = userPositions.length > 0 ? 
+    userPositions.reduce((oldest, pos) => 
       !pos.closed && pos.start < oldest.start ? pos : oldest, 
-      positions[0][0]
+      userPositions[0]
     ) : null;
     
-  const streakDays = oldestPosition ? 
+  const streakDays = oldestPosition && !oldestPosition.closed ? 
     Math.floor((Date.now() / 1000 - Number(oldestPosition.start)) / 86400) : 0;
 
   return (
@@ -180,10 +207,7 @@ const StreakCard = () => {
   );
 };
 
-const SoloPlanCard = ({ position, onClaim }: {
-  position: any;
-  onClaim?: (positionId: bigint) => void;
-}) => {
+const SoloPlanCard = ({ position }: { position: any }) => {
   const { data: interest } = usePreviewInterest(position.id);
   const interestAmount = interest && typeof interest === 'bigint' ? formatEther(interest) : '0';
   
@@ -229,14 +253,6 @@ const SoloPlanCard = ({ position, onClaim }: {
         <span>APY: {getAPY(position.planType)}</span>
         <span>Interest: {interestAmount} STT</span>
       </div>
-      {status === 'claimable' && onClaim && (
-        <button 
-          onClick={() => onClaim(position.id)}
-          className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-sm font-medium transition-colors"
-        >
-          Claim Rewards
-        </button>
-      )}
     </div>
   );
 };
@@ -246,7 +262,7 @@ const SoloPlansSection = () => {
   const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   
-  const userPositions = positions && positions[0] ? positions[0] : [];
+  const userPositions = positions?.[0] || [];
 
   if (isLoading) {
     return (
@@ -265,7 +281,7 @@ const SoloPlansSection = () => {
       </div>
       <div className="max-h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         {userPositions.length > 0 ? (
-          userPositions.map((position: any, index: number) => (
+          userPositions.map((position, index) => (
             <SoloPlanCard key={index} position={position} />
           ))
         ) : (
@@ -280,17 +296,15 @@ const SoloPlansSection = () => {
 };
 
 const SavingsPodsSection = () => {
-  const { data: publicPods } = usePublicPods(BigInt(0), BigInt(5));
+  const { data: publicPods } = usePublicPods() as { data: PublicPodsResult | undefined };
   
-  const pods = publicPods as any[];
-  const podData = pods ? {
-    ids: pods[0] || [],
-    names: pods[1] || [],
-    planTypes: pods[2] || [],
-    aprs: pods[3] || [],
-    contributions: pods[4] || [],
-    joinedCounts: pods[5] || [],
-    activated: pods[6] || []
+  const podData = publicPods ? {
+    ids: publicPods[0] || [],
+    names: publicPods[1] || [],
+    planTypes: publicPods[2] || [],
+    aprs: publicPods[3] || [],
+    contributions: publicPods[4] || [],
+    joinedCounts: publicPods[5] || [],
   } : null;
 
   return (
@@ -305,13 +319,10 @@ const SavingsPodsSection = () => {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="font-semibold text-white">{podData.names[index]}</h4>
-                  <p className="text-gray-400 text-sm">{podData.joinedCounts[index].toString()} members</p>
+                  <p className="text-gray-400 text-sm">{podData.joinedCounts[index].toString()}/5 members</p>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-md border ${
-                  podData.activated[index] ? 'bg-green-900/50 text-green-300 border-green-600' : 
-                  'bg-yellow-900/50 text-yellow-300 border-yellow-600'
-                }`}>
-                  {podData.activated[index] ? 'ACTIVE' : 'FILLING'}
+                <span className="px-2 py-1 text-xs rounded-md border bg-yellow-900/50 text-yellow-300 border-yellow-600">
+                  OPEN
                 </span>
               </div>
               <div className="space-y-2 text-sm">
@@ -321,7 +332,7 @@ const SavingsPodsSection = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">APY:</span>
-                  <span className="text-purple-300">{(Number(podData.aprs[index]) / 100)}%</span>
+                  <span className="text-purple-300">{(Number(podData.aprs[index]) / 100).toFixed(1)}%</span>
                 </div>
               </div>
             </div>

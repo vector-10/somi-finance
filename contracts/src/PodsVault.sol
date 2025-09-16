@@ -7,7 +7,8 @@ import {ReentrancyGuard} from "openzeppelin-contracts/utils/ReentrancyGuard.sol"
 import {SavingsReceipt1155} from "./SavingsReceipt1155.sol";
 import {InterestCalculator} from "./InterestCalculator.sol";
 
-
+/// @title PodsVaultV2 — Social savings pods with public/private discovery and flex/fixed plans
+/// @notice Native STT only (payable). Principal held in vault; interest paid by Treasury.
 contract PodsVault is Ownable, Pausable, ReentrancyGuard {
     using InterestCalculator for uint256;
 
@@ -25,7 +26,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
     uint16 private constant APY_2Y      = 5000; // 50%
 
     uint32 private constant MIN_MEMBERS_TO_ACTIVATE = 3;
-    uint32 private constant MAX_MEMBERS             = 5; // NEW: hard cap
 
     enum PlanType { FLEX, CUSTOM_DAYS, FIXED_6M, FIXED_1Y, FIXED_2Y }
 
@@ -49,7 +49,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         // lifecycle
         bool    activated;
         bool    cancelled;
-        bool    closedForJoining;   // NEW: creator/auto close joins
         uint48  startTime;          // set at activation
         uint48  maturityTime;       // startTime + term (if term > 0)
 
@@ -68,7 +67,7 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     mapping(uint256 => Pod) public pods;                                // podId => Pod
     mapping(uint256 => mapping(address => Member)) public member;       // podId => user => Member
-    mapping(uint256 => address[]) public podMembers;                    // for UX/debug
+    mapping(uint256 => address[]) public podMembers;                    // for UX/debug (bounded by user base)
 
     // Public discovery index
     uint256[] public publicPodIds;                                      // dense list of public pods
@@ -93,9 +92,9 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     event PodVisibilityChanged(uint256 indexed podId, bool isPublic);
     event PodMetadataUpdated(uint256 indexed podId, string name, string description);
-    event PodJoinClosed(uint256 indexed podId); // NEW
 
     event MemberJoined(uint256 indexed podId, address indexed user, uint256 receiptId);
+
     event PodActivated(uint256 indexed podId, uint48 startTime, uint48 maturityTime);
 
     /// @notice Emitted when a member leaves (covers flex withdraws, fixed claims, and pre-activation refunds)
@@ -171,6 +170,7 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         require(p.creator == msg.sender, "NOT_CREATOR");
         require(!p.activated && !p.cancelled, "LOCKED");
 
+        // already same?
         if (p.isPublic == isPublic_) {
             emit PodVisibilityChanged(podId, isPublic_);
             return;
@@ -178,10 +178,20 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
         p.isPublic = isPublic_;
         if (isPublic_) {
+            // add
             publicPodIds.push(podId);
             publicIndex[podId] = publicPodIds.length; // 1-based
         } else {
-            _removeFromPublicIndex(podId);
+            // remove via swap-and-pop
+            uint256 idx1 = publicIndex[podId];
+            if (idx1 != 0) {
+                uint256 idx = idx1 - 1;
+                uint256 lastId = publicPodIds[publicPodIds.length - 1];
+                publicPodIds[idx] = lastId;
+                publicIndex[lastId] = idx + 1;
+                publicPodIds.pop();
+                publicIndex[podId] = 0;
+            }
         }
         emit PodVisibilityChanged(podId, isPublic_);
     }
@@ -200,20 +210,7 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         require(p.creator == msg.sender, "NOT_CREATOR");
         require(!p.activated && !p.cancelled, "LOCKED");
         p.cancelled = true;
-        // Remove from discovery if needed
-        if (p.isPublic) _removeFromPublicIndex(podId);
         emit PodCancelled(podId);
-    }
-
-    /// @notice Creator can proactively close the pod for further joins (before or after activation).
-    function closeForJoining(uint256 podId) external {
-        Pod storage p = pods[podId];
-        require(p.creator == msg.sender, "NOT_CREATOR");
-        require(!p.cancelled, "CANCELLED");
-        require(!p.closedForJoining, "ALREADY_CLOSED");
-        p.closedForJoining = true;
-        if (p.isPublic) _removeFromPublicIndex(podId);
-        emit PodJoinClosed(podId);
     }
 
     // ---------- Join & leave ----------
@@ -224,8 +221,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         Pod storage p = pods[podId];
         require(!p.cancelled, "CANCELLED");
         require(!p.activated, "ALREADY_ACTIVE"); // no late joins in V2
-        require(!p.closedForJoining, "JOIN_CLOSED"); // NEW: creator/full lock
-        require(p.membersJoined < MAX_MEMBERS, "POD_FULL"); // NEW: hard cap
         require(msg.value == p.contributionAmount, "AMOUNT_MISMATCH");
 
         Member storage m = member[podId][msg.sender];
@@ -243,16 +238,9 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
         emit MemberJoined(podId, msg.sender, rid);
 
-        // Auto-activate at threshold
-        if (p.membersJoined >= MIN_MEMBERS_TO_ACTIVATE && !p.activated) {
+        // auto-activate if threshold reached
+        if (p.membersJoined >= MIN_MEMBERS_TO_ACTIVATE) {
             _activate(podId, p);
-        }
-
-        // Auto-close joins at cap
-        if (p.membersJoined == MAX_MEMBERS) {
-            p.closedForJoining = true;
-            if (p.isPublic) _removeFromPublicIndex(podId);
-            emit PodJoinClosed(podId);
         }
     }
 
@@ -316,7 +304,7 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     // ---------- Views ----------
 
-    /// @notice Returns summarized details for a pod (UI-friendly). (Signature unchanged)
+    /// @notice Returns summarized details for a pod (UI-friendly).
     function getPodDetails(uint256 podId)
         external
         view
@@ -355,108 +343,53 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         activeMembers = p.activeMembers;
         totalDeposited = p.totalDeposited;
     }
-function getPublicPods(uint256 cursor, uint256 size)
-    external
-    view
-    returns (
-        uint256[] memory ids,
-        string[] memory names,
-        uint8[] memory planTypes,
-        uint16[] memory aprs,
-        uint128[] memory contributions,
-        uint32[] memory joinedCounts,
-        bool[] memory activatedFlags,
-        uint256 nextCursor
-    )
-{
-    uint256 len = publicPodIds.length;
-    if (cursor >= len) {
-        return _getEmptyPublicPodsResult(cursor);
+
+    /// @notice Paged list of public pods for discovery.
+    function getPublicPods(uint256 cursor, uint256 size)
+        external
+        view
+        returns (
+            uint256[] memory ids,
+            string[] memory names,
+            uint8[] memory planTypes,
+            uint16[] memory aprs,
+            uint128[] memory contributions,
+            uint32[] memory joinedCounts,
+            bool[] memory activatedFlags,
+            uint256 nextCursor
+        )
+    {
+        uint256 len = publicPodIds.length;
+        if (cursor >= len) {
+            return (new uint256[](0), new string[](0), new uint8[](0), new uint16[](0), new uint128[](0), new uint32[](0), new bool[](0), cursor);
+        }
+
+        uint256 end = cursor + size;
+        if (end > len) end = len;
+        uint256 n = end - cursor;
+
+        ids = new uint256[](n);
+        names = new string[](n);
+        planTypes = new uint8[](n);
+        aprs = new uint16[](n);
+        contributions = new uint128[](n);
+        joinedCounts = new uint32[](n);
+        activatedFlags = new bool[](n);
+
+        for (uint256 i = 0; i < n; i++) {
+            uint256 podId = publicPodIds[cursor + i];
+            Pod storage p = pods[podId];
+            ids[i] = podId;
+            names[i] = p.name;
+            planTypes[i] = p.planType;
+            aprs[i] = p.aprBps;
+            contributions[i] = p.contributionAmount;
+            joinedCounts[i] = p.membersJoined;
+            activatedFlags[i] = p.activated;
+        }
+
+        nextCursor = end;
     }
-
-    return _buildPublicPodsResult(cursor, size, len);
-}
-
-function _getEmptyPublicPodsResult(uint256 cursor) 
-    internal 
-    pure 
-    returns (
-        uint256[] memory,
-        string[] memory,
-        uint8[] memory,
-        uint16[] memory,
-        uint128[] memory,
-        uint32[] memory,
-        bool[] memory,
-        uint256
-    ) 
-{
-    return (
-        new uint256[](0), 
-        new string[](0), 
-        new uint8[](0), 
-        new uint16[](0), 
-        new uint128[](0), 
-        new uint32[](0), 
-        new bool[](0), 
-        cursor
-    );
-}
-
-function _buildPublicPodsResult(uint256 cursor, uint256 size, uint256 len)
-    internal
-    view
-    returns (
-        uint256[] memory ids,
-        string[] memory names,
-        uint8[] memory planTypes,
-        uint16[] memory aprs,
-        uint128[] memory contributions,
-        uint32[] memory joinedCounts,
-        bool[] memory activatedFlags,
-        uint256 nextCursor
-    )
-{
-    nextCursor = cursor + size;
-    if (nextCursor > len) nextCursor = len;
-    uint256 count = nextCursor - cursor;
-
-    ids = new uint256[](count);
-    names = new string[](count);
-    planTypes = new uint8[](count);
-    aprs = new uint16[](count);
-    contributions = new uint128[](count);
-    joinedCounts = new uint32[](count);
-    activatedFlags = new bool[](count);
-
-    for (uint256 i = 0; i < count;) {
-        _populatePublicPodData(ids, names, planTypes, aprs, contributions, joinedCounts, activatedFlags, cursor + i, i);
-        unchecked { ++i; }
-    }
-}
-
-function _populatePublicPodData(
-    uint256[] memory ids,
-    string[] memory names,
-    uint8[] memory planTypes,
-    uint16[] memory aprs,
-    uint128[] memory contributions,
-    uint32[] memory joinedCounts,
-    bool[] memory activatedFlags,
-    uint256 podIndex,
-    uint256 arrayIndex
-) internal view {
-    uint256 podId = publicPodIds[podIndex];
-    Pod storage p = pods[podId];
-    
-    ids[arrayIndex] = podId;
-    names[arrayIndex] = p.name;
-    planTypes[arrayIndex] = p.planType;
-    aprs[arrayIndex] = p.aprBps;
-    contributions[arrayIndex] = p.contributionAmount;
-    joinedCounts[arrayIndex] = p.membersJoined;
-    activatedFlags[arrayIndex] = p.activated;
-}
 
     /// @notice Member count (joined & active) for a pod.
     function getPodMemberCount(uint256 podId) external view returns (uint32 membersJoined, uint32 activeMembers) {
@@ -473,12 +406,6 @@ function _populatePublicPodData(
         (uint256 interest, bool matured) = _computeInterestForMember(p);
         if (_isFixed(p.planType) && !matured) return 0;
         return interest;
-    }
-
-    /// @notice Quick check for UI: is this pod currently joinable?
-    function isJoinable(uint256 podId) external view returns (bool) {
-        Pod storage p = pods[podId];
-        return (!p.cancelled && !p.activated && !p.closedForJoining && p.membersJoined < MAX_MEMBERS);
     }
 
     /// @notice Optional milestone: upgrade receipt to Silver when ≥50% of term elapsed (term pods only).
@@ -513,17 +440,6 @@ function _populatePublicPodData(
             p.maturityTime = uint48(uint256(p.startTime) + uint256(p.term));
         }
         emit PodActivated(podId, p.startTime, p.maturityTime);
-    }
-
-    function _removeFromPublicIndex(uint256 podId) internal {
-        uint256 idx1 = publicIndex[podId];
-        if (idx1 == 0) return;
-        uint256 idx = idx1 - 1;
-        uint256 lastId = publicPodIds[publicPodIds.length - 1];
-        publicPodIds[idx] = lastId;
-        publicIndex[lastId] = idx + 1;
-        publicPodIds.pop();
-        publicIndex[podId] = 0;
     }
 
     function _deriveTermsAndApr(uint8 planType, uint48 customDays)

@@ -143,7 +143,7 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
   const timeRemaining = getTimeRemaining(position);
   const progress = getProgress(position);
   const depositAmount = parseFloat(formatEther(position.principal));
-  const earnedRewards = interest ? parseFloat(formatEther(interest)) : 0;
+  const earnedRewards = interest && typeof interest === 'bigint' ? parseFloat(formatEther(interest)) : 0;
   const claimableAmount = status === 'claimable' ? depositAmount + earnedRewards : earnedRewards;
 
   const statusConfig = {

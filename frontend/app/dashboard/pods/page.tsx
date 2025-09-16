@@ -1,11 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useAccount, useBalance } from 'wagmi';
-import { formatEther, parseEther } from 'viem';
-import { useVault, usePodDetails, usePodMemberCount, usePublicPods } from '@/hooks/useVault';
-import { PLAN_TYPES, POD_APY } from '@/lib/contracts';
-
+import React, { useState } from "react";
+import { useAccount, useBalance } from "wagmi";
+import { formatEther } from "viem";
+import {
+  useVault,
+  usePodDetails,
+  usePodMemberCount,
+  usePublicPods,
+  useIsJoinable,
+} from "@/hooks/useVault";
+import { PLAN_TYPES } from "@/lib/contracts";
 
 interface PodDetails {
   creator: string;
@@ -31,14 +36,12 @@ interface MemberCount {
 }
 
 interface PublicPodsResult {
-  0: bigint[]; // ids
-  1: string[]; // names
-  2: number[]; // planTypes
-  3: number[]; // aprs
-  4: bigint[]; // contributions
-  5: number[]; // joinedCounts
-  6: boolean[]; // activatedFlags
-  7: bigint; // nextCursor
+  0: bigint[];
+  1: string[];
+  2: number[];
+  3: number[];
+  4: bigint[];
+  5: number[];
 }
 
 const WalletBalanceCard = () => {
@@ -47,9 +50,12 @@ const WalletBalanceCard = () => {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-4 backdrop-blur">
-      <h3 className="text-sm font-medium text-gray-400 mb-2">Available Balance</h3>
+      <h3 className="text-sm font-medium text-gray-400 mb-2">
+        Available Balance
+      </h3>
       <p className="text-2xl font-bold text-white">
-        {balance ? parseFloat(formatEther(balance.value)).toFixed(4) : '0.0000'} STT
+        {balance ? parseFloat(formatEther(balance.value)).toFixed(4) : "0.0000"}{" "}
+        STT
       </p>
     </div>
   );
@@ -57,69 +63,107 @@ const WalletBalanceCard = () => {
 
 const InfoCard = () => (
   <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-    <h3 className="text-lg font-semibold text-white mb-3">About Savings Pods</h3>
+    <h3 className="text-lg font-semibold text-white mb-3">
+      About Savings Pods
+    </h3>
     <div className="space-y-2 text-sm text-gray-300">
       <p>• All members contribute the same fixed amount set by creator</p>
-      <p>• Pods auto-activate when 3+ members join (no manual activation needed)</p>
+      <p>• Pods auto-activate when 3+ members join, max 5 members total</p>
+      <p>• Creator can close joining manually or it auto-closes at 5 members</p>
       <p>• Earn higher APY rates compared to solo savings plans</p>
-      <p>• Members can leave anytime with principal + earned interest</p>
       <p>• Fixed plans: no interest until maturity, full interest after</p>
     </div>
   </div>
 );
 
 const JoinPodTab = () => {
-  const [podId, setPodId] = useState('');
+  const [podId, setPodId] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
+
+  const {
+    data: podDetails,
+    isLoading: isLoadingDetails,
+    error: podError,
+  } = usePodDetails(podId ? BigInt(podId) : BigInt(0)) as {
+    data: PodDetails | undefined;
+    isLoading: boolean;
+    error: any;
+  };
   
-  const { data: podDetails, isLoading: isLoadingDetails, error: podError } = usePodDetails(
+  const { data: memberCount } = usePodMemberCount(
     podId ? BigInt(podId) : BigInt(0)
-  ) as { data: PodDetails | undefined; isLoading: boolean; error: any };
-  const { data: memberCount } = usePodMemberCount(podId ? BigInt(podId) : BigInt(0)) as { data: MemberCount | undefined };
+  ) as { data: MemberCount | undefined };
   
-  const { joinPodWithAmount, isPending, isConfirming, isSuccess, error } = useVault();
+  const { data: isJoinable } = useIsJoinable(podId ? BigInt(podId) : BigInt(0)) as { data: boolean | undefined };
+
+  const { joinPodWithAmount, isPending, isConfirming, isSuccess, error } =
+    useVault();
 
   const searchPod = () => {
     setIsSearching(true);
     setSearchAttempted(true);
-    // The hook will automatically fetch when podId changes
-    setTimeout(() => setIsSearching(false), 500); // Small delay for UX
+    setTimeout(() => setIsSearching(false), 500);
   };
 
   const handleJoinPod = async () => {
     if (!podDetails || !podId) return;
-    
+
     try {
       await joinPodWithAmount({
         podId: BigInt(podId),
-        amountEth: formatEther(podDetails.contributionAmount)
+        amountEth: formatEther(podDetails.contributionAmount),
       });
     } catch (err) {
-      console.error('Join pod failed:', err);
+      console.error("Join pod failed:", err);
     }
   };
 
   const getPlanName = (planType: number) => {
-    const types = ['Flex', 'Custom', '6 Month', '1 Year', '2 Year'];
-    return types[planType] || 'Unknown';
+    const types = ["Flex", "Custom", "6 Month", "1 Year", "2 Year"];
+    return types[planType] || "Unknown";
   };
 
   const getAPY = (planType: number) => {
-    const apys = [12, 15, 20, 25, 50]; // Pod APY rates
+    const apys = [12, 15, 20, 25, 50];
     return apys[planType] || 0;
   };
 
-  const podExists = podDetails && podDetails.creator !== '0x0000000000000000000000000000000000000000';
-  const contributionAmount = podDetails ? formatEther(podDetails.contributionAmount) : '0';
+  const getPodStatus = () => {
+    if (!podDetails) return 'UNKNOWN';
+    if (podDetails.cancelled) return 'CANCELLED';
+    if (podDetails.activated) return 'ACTIVE';
+    if (!isJoinable && currentMembers === 5) return 'FULL';
+    if (!isJoinable) return 'CLOSED';
+    return 'FILLING';
+  };
+
+  const podExists =
+    podDetails &&
+    podDetails.creator !== "0x0000000000000000000000000000000000000000";
+  const contributionAmount = podDetails
+    ? formatEther(podDetails.contributionAmount)
+    : "0";
   const currentMembers = memberCount ? Number(memberCount.membersJoined) : 0;
   const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
+  const status = getPodStatus();
+
+  const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
+    'FILLING': { bg: 'bg-yellow-900/50', text: 'text-yellow-300', border: 'border-yellow-600' },
+    'ACTIVE': { bg: 'bg-green-900/50', text: 'text-green-300', border: 'border-green-600' },
+    'FULL': { bg: 'bg-blue-900/50', text: 'text-blue-300', border: 'border-blue-600' },
+    'CLOSED': { bg: 'bg-gray-900/50', text: 'text-gray-400', border: 'border-gray-600' },
+    'CANCELLED': { bg: 'bg-red-900/50', text: 'text-red-300', border: 'border-red-600' }
+  };
+
+  const config = statusConfig[status] || statusConfig['UNKNOWN'];
+  const canJoin = isJoinable && !isPending && !isConfirming;
 
   return (
     <div className="space-y-6">
       <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
         <h3 className="text-xl font-bold text-white mb-4">Join Existing Pod</h3>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -138,12 +182,11 @@ const JoinPodTab = () => {
                 disabled={!podId || isSearching}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
               >
-                {isSearching ? 'Searching...' : 'Search'}
+                {isSearching ? "Searching..." : "Search"}
               </button>
             </div>
           </div>
 
-          {/* Loading State */}
           {isLoadingDetails && searchAttempted && (
             <div className="bg-white/10 border border-white/20 rounded-md p-4">
               <div className="flex items-center justify-center">
@@ -153,60 +196,67 @@ const JoinPodTab = () => {
             </div>
           )}
 
-          {/* Pod Not Found */}
           {searchAttempted && !isLoadingDetails && (!podExists || podError) && (
             <div className="bg-red-900/20 border border-red-600 rounded-md p-4">
               <p className="text-red-400">Pod not found or doesn't exist</p>
             </div>
           )}
 
-          {/* Pod Details */}
           {podExists && !isLoadingDetails && (
             <div className="bg-white/10 border border-white/20 rounded-md p-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h4 className="text-lg font-semibold text-white">{podDetails.name}</h4>
-                  <p className="text-gray-400 text-sm">{podDetails.description}</p>
-                  <p className="text-gray-400 text-xs">Created by {podDetails.creator.slice(0, 6)}...{podDetails.creator.slice(-4)}</p>
+                  <h4 className="text-lg font-semibold text-white">
+                    {podDetails.name}
+                  </h4>
+                  <p className="text-gray-400 text-sm">
+                    {podDetails.description}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    Created by {podDetails.creator.slice(0, 6)}...
+                    {podDetails.creator.slice(-4)}
+                  </p>
                 </div>
                 <div className="text-right">
                   <div className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold mb-2">
                     {getAPY(podDetails.planType)}% APY
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-md border ${
-                    podDetails.activated 
-                      ? 'bg-green-900/50 text-green-300 border-green-600' 
-                      : podDetails.cancelled
-                      ? 'bg-red-900/50 text-red-300 border-red-600'
-                      : 'bg-yellow-900/50 text-yellow-300 border-yellow-600'
-                  }`}>
-                    {podDetails.cancelled ? 'CANCELLED' : podDetails.activated ? 'ACTIVE' : 'FILLING'}
+                  <span className={`px-2 py-1 text-xs rounded-md border ${config.bg} ${config.text} ${config.border}`}>
+                    {status}
                   </span>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div>
                   <span className="text-gray-400">Plan:</span>
-                  <p className="text-white font-medium">{getPlanName(podDetails.planType)}</p>
+                  <p className="text-white font-medium">
+                    {getPlanName(podDetails.planType)}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-400">Members:</span>
-                  <p className="text-white font-medium">{currentMembers} joined, {activeMembers} active</p>
+                  <p className="text-white font-medium">
+                    {currentMembers}/5 joined
+                    {status === 'FILLING' && ` (${3 - currentMembers} more to activate)`}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-gray-400">Contribution (per member):</span>
-                  <p className="text-white font-medium">{contributionAmount} STT</p>
+                  <span className="text-gray-400">
+                    Contribution (per member):
+                  </span>
+                  <p className="text-white font-medium">
+                    {contributionAmount} STT
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-400">Status:</span>
                   <p className="text-white font-medium">
-                    {podDetails.cancelled 
-                      ? 'Cancelled' 
-                      : podDetails.activated 
-                      ? 'Active - Can Join Late' 
-                      : `${3 - currentMembers} more needed to activate`
-                    }
+                    {status === 'FULL' ? 'Pod Full (5/5)' :
+                     status === 'CLOSED' ? 'Joining Closed by Creator' :
+                     status === 'CANCELLED' ? 'Pod Cancelled' :
+                     status === 'ACTIVE' ? 'Pod Active' :
+                     `Open for joining`}
                   </p>
                 </div>
               </div>
@@ -215,18 +265,24 @@ const JoinPodTab = () => {
                 <div className="bg-white/10 rounded-md p-3 mb-4">
                   <div className="text-sm">
                     <span className="text-gray-400">Duration:</span>
-                    <span className="text-white font-medium ml-2">{Math.floor(podDetails.term / 86400)} days</span>
+                    <span className="text-white font-medium ml-2">
+                      {Math.floor(podDetails.term / 86400)} days
+                    </span>
                     {podDetails.activated && (
                       <>
                         <br />
                         <span className="text-gray-400">Started:</span>
                         <span className="text-white font-medium ml-2">
-                          {new Date(Number(podDetails.startTime) * 1000).toLocaleDateString()}
+                          {new Date(
+                            Number(podDetails.startTime) * 1000
+                          ).toLocaleDateString()}
                         </span>
                         <br />
                         <span className="text-gray-400">Matures:</span>
                         <span className="text-white font-medium ml-2">
-                          {new Date(Number(podDetails.maturityTime) * 1000).toLocaleDateString()}
+                          {new Date(
+                            Number(podDetails.maturityTime) * 1000
+                          ).toLocaleDateString()}
                         </span>
                       </>
                     )}
@@ -234,25 +290,25 @@ const JoinPodTab = () => {
                 </div>
               )}
 
-              {!podDetails.cancelled && (
-                <button 
-                  onClick={handleJoinPod}
-                  disabled={isPending || isConfirming}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
-                >
-                  {isPending || isConfirming 
-                    ? 'Processing...' 
-                    : `Join Pod (${contributionAmount} STT)`
-                  }
-                </button>
-              )}
+              <button
+                onClick={handleJoinPod}
+                disabled={!canJoin}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {status === 'FULL' ? 'Pod Full' :
+                 status === 'CLOSED' ? 'Joining Closed' :
+                 status === 'CANCELLED' ? 'Pod Cancelled' :
+                 status === 'ACTIVE' ? 'Pod Already Active' :
+                 isPending || isConfirming ? 'Processing...' :
+                 `Join Pod (${contributionAmount} STT)`}
+              </button>
 
               {error && (
                 <div className="text-red-400 text-sm mt-2">
                   Error: {error.message}
                 </div>
               )}
-              
+
               {isSuccess && (
                 <div className="text-green-400 text-sm mt-2">
                   Successfully joined pod! Check your dashboard.
@@ -267,29 +323,40 @@ const JoinPodTab = () => {
 };
 
 const CreatePodTab = () => {
-  const [selectedTerm, setSelectedTerm] = useState('6m');
-  const [podName, setPodName] = useState('');
-  const [podDescription, setPodDescription] = useState('');
-  const [contributionAmount, setContributionAmount] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState("6m");
+  const [podName, setPodName] = useState("");
+  const [podDescription, setPodDescription] = useState("");
+  const [contributionAmount, setContributionAmount] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  const [customDays, setCustomDays] = useState('');
+  const [customDays, setCustomDays] = useState("");
 
-  const { createPod, isPending, isConfirming, isSuccess, error, hash } = useVault();
+  const { createPod, closeForJoining, isPending, isConfirming, isSuccess, error, hash } =
+    useVault();
 
   const terms = [
-    { id: 'flex', label: 'Flex Save', apy: 12, planType: PLAN_TYPES.FLEX },
-    { id: 'custom', label: 'Custom Days', apy: 15, planType: PLAN_TYPES.CUSTOM_DAYS },
-    { id: '6m', label: '6 Months', apy: 20, planType: PLAN_TYPES.FIXED_6M },
-    { id: '1y', label: '1 Year', apy: 25, planType: PLAN_TYPES.FIXED_1Y },
-    { id: '2y', label: '2 Years', apy: 50, planType: PLAN_TYPES.FIXED_2Y }
+    { id: "flex", label: "Flex Save", apy: 12, planType: PLAN_TYPES.FLEX },
+    {
+      id: "custom",
+      label: "Custom Days",
+      apy: 15,
+      planType: PLAN_TYPES.CUSTOM_DAYS,
+    },
+    { id: "6m", label: "6 Months", apy: 20, planType: PLAN_TYPES.FIXED_6M },
+    { id: "1y", label: "1 Year", apy: 25, planType: PLAN_TYPES.FIXED_1Y },
+    { id: "2y", label: "2 Years", apy: 50, planType: PLAN_TYPES.FIXED_2Y },
   ];
 
-  const selectedTermData = terms.find(term => term.id === selectedTerm);
+  const selectedTermData = terms.find((term) => term.id === selectedTerm);
 
   const handleCreatePod = async () => {
-    if (!podName || !contributionAmount || parseFloat(contributionAmount) <= 0) return;
-    if (selectedTerm === 'custom' && (!customDays || parseInt(customDays) <= 0 || parseInt(customDays) > 150)) return;
-    
+    if (!podName || !contributionAmount || parseFloat(contributionAmount) <= 0)
+      return;
+    if (
+      selectedTerm === "custom" &&
+      (!customDays || parseInt(customDays) <= 0 || parseInt(customDays) > 150)
+    )
+      return;
+
     try {
       await createPod({
         name: podName,
@@ -297,10 +364,10 @@ const CreatePodTab = () => {
         isPublic,
         contributionAmountEth: contributionAmount,
         planType: selectedTermData?.planType || 0,
-        customDays: selectedTerm === 'custom' ? parseInt(customDays) : 0
+        customDays: selectedTerm === "custom" ? parseInt(customDays) : 0,
       });
     } catch (err) {
-      console.error('Create pod failed:', err);
+      console.error("Create pod failed:", err);
     }
   };
 
@@ -308,7 +375,7 @@ const CreatePodTab = () => {
     <div className="space-y-6">
       <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
         <h3 className="text-xl font-bold text-white mb-4">Create New Pod</h3>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -352,7 +419,9 @@ const CreatePodTab = () => {
               disabled={isPending || isConfirming}
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
             />
-            <p className="text-xs text-gray-400 mt-1">All members must contribute exactly this amount</p>
+            <p className="text-xs text-gray-400 mt-1">
+              All members must contribute exactly this amount (max 5 members)
+            </p>
           </div>
 
           <div>
@@ -365,8 +434,8 @@ const CreatePodTab = () => {
                 disabled={isPending || isConfirming}
                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
                   isPublic
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    ? "bg-purple-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`}
               >
                 Public
@@ -376,8 +445,8 @@ const CreatePodTab = () => {
                 disabled={isPending || isConfirming}
                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
                   !isPublic
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    ? "bg-purple-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`}
               >
                 Private
@@ -397,8 +466,8 @@ const CreatePodTab = () => {
                   disabled={isPending || isConfirming}
                   className={`py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
                     selectedTerm === term.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white/10 text-gray-400 hover:text-white hover:bg-white/20'
+                      ? "bg-purple-600 text-white"
+                      : "bg-white/10 text-gray-400 hover:text-white hover:bg-white/20"
                   }`}
                 >
                   {term.label}
@@ -413,8 +482,8 @@ const CreatePodTab = () => {
                   disabled={isPending || isConfirming}
                   className={`py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
                     selectedTerm === term.id
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-400 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   {term.label}
@@ -423,7 +492,7 @@ const CreatePodTab = () => {
             </div>
           </div>
 
-          {selectedTerm === 'custom' && (
+          {selectedTerm === "custom" && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Custom Duration (Days)
@@ -438,20 +507,28 @@ const CreatePodTab = () => {
                 disabled={isPending || isConfirming}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
               />
-              <p className="text-xs text-gray-400 mt-1">Maximum 150 days for custom duration</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Maximum 150 days for custom duration
+              </p>
             </div>
           )}
 
           <div className="bg-white/10 rounded-md p-4">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-white font-medium">{selectedTermData?.label} Plan</p>
+                <p className="text-white font-medium">
+                  {selectedTermData?.label} Plan
+                </p>
                 <p className="text-gray-400 text-sm">
-                  {selectedTerm === 'flex' ? 'Flexible duration' :
-                   selectedTerm === 'custom' ? `${customDays || 0} days duration` :
-                   selectedTerm === '6m' ? '180 days duration' :
-                   selectedTerm === '1y' ? '365 days duration' :
-                   '730 days duration'}
+                  {selectedTerm === "flex"
+                    ? "Flexible duration"
+                    : selectedTerm === "custom"
+                    ? `${customDays || 0} days duration`
+                    : selectedTerm === "6m"
+                    ? "180 days duration"
+                    : selectedTerm === "1y"
+                    ? "365 days duration"
+                    : "730 days duration"}
                 </p>
               </div>
               <div className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold">
@@ -460,19 +537,22 @@ const CreatePodTab = () => {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={handleCreatePod}
             disabled={
-              isPending || 
-              isConfirming || 
-              !podName || 
-              !contributionAmount || 
+              isPending ||
+              isConfirming ||
+              !podName ||
+              !contributionAmount ||
               parseFloat(contributionAmount) <= 0 ||
-              (selectedTerm === 'custom' && (!customDays || parseInt(customDays) <= 0 || parseInt(customDays) > 150))
+              (selectedTerm === "custom" &&
+                (!customDays ||
+                  parseInt(customDays) <= 0 ||
+                  parseInt(customDays) > 150))
             }
             className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
           >
-            {isPending || isConfirming ? 'Creating Pod...' : 'Create Pod'}
+            {isPending || isConfirming ? "Creating Pod..." : "Create Pod"}
           </button>
 
           {error && (
@@ -480,30 +560,41 @@ const CreatePodTab = () => {
               Error: {error.message}
             </div>
           )}
-          
+
           {isSuccess && hash && (
             <div className="bg-green-900/20 border border-green-600 rounded-md p-4">
-              <h4 className="text-green-400 font-semibold mb-2">Pod Created Successfully!</h4>
+              <h4 className="text-green-400 font-semibold mb-2">
+                Pod Created Successfully!
+              </h4>
               <div className="space-y-2">
                 <p className="text-green-300 text-sm">
-                  Your pod has been created. Share the Pod ID with friends so they can join.
-                  The Pod ID will be visible in the transaction details or check your dashboard.
+                  Your pod has been created and is now accepting members (max 5).
+                  You can close joining manually or it will auto-close when full.
                 </p>
-                <a 
-                  href={`https://explorer.somnia.network/tx/${hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-white text-sm font-medium transition-colors"
-                >
-                  View Transaction
-                </a>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={`https://explorer.somnia.network/tx/${hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-white text-sm font-medium transition-colors text-center"
+                  >
+                    View Transaction
+                  </a>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(window.location.origin + '/dashboard/pods')}
+                    className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm font-medium transition-colors"
+                  >
+                    Share Pod Page
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {selectedTerm !== 'flex' && (
+          {selectedTerm !== "flex" && (
             <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
-              ⚠️ Fixed and custom plans: Early exit before maturity forfeits all interest. You'll only get your principal back.
+              ⚠️ Fixed and custom plans: Early exit before maturity forfeits all
+              interest. You'll only get your principal back.
             </div>
           )}
         </div>
@@ -513,41 +604,55 @@ const CreatePodTab = () => {
 };
 
 const PublicPodsPreview = () => {
-  const { data: publicPods } = usePublicPods(BigInt(0), BigInt(3)) as { data: PublicPodsResult | undefined };
-  
-  const podData = publicPods ? {
-    ids: publicPods[0] || [],
-    names: publicPods[1] || [],
-    planTypes: publicPods[2] || [],
-    aprs: publicPods[3] || [],
-    contributions: publicPods[4] || [],
-    joinedCounts: publicPods[5] || [],
-    activated: publicPods[6] || []
-  } : null;
+  const { data: publicPods } = usePublicPods() as {
+    data: PublicPodsResult | undefined;
+  };
+
+  const podData = publicPods
+    ? {
+        ids: publicPods[0] || [],
+        names: publicPods[1] || [],
+        planTypes: publicPods[2] || [],
+        aprs: publicPods[3] || [],
+        contributions: publicPods[4] || [],
+        joinedCounts: publicPods[5] || [],
+      }
+    : null;
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-      <h3 className="text-lg font-semibold text-white mb-4">Recent Public Pods</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">
+        Recent Public Pods
+      </h3>
       <div className="space-y-3">
         {podData && podData.ids.length > 0 ? (
           podData.ids.slice(0, 3).map((id: bigint, index: number) => (
             <div key={index} className="bg-white/10 rounded-md p-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-white font-medium">{podData.names[index]}</p>
+                  <p className="text-white font-medium">
+                    {podData.names[index]}
+                  </p>
                   <p className="text-gray-400 text-sm">
-                    Pod #{id.toString()} • {podData.joinedCounts[index].toString()} members
+                    Pod #{id.toString()} •{" "}
+                    {podData.joinedCounts[index].toString()}/5 members
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-purple-300 font-medium">{formatEther(podData.contributions[index])} STT</p>
-                  <p className="text-green-400 text-sm">{(Number(podData.aprs[index]) / 100)}% APY</p>
+                  <p className="text-purple-300 font-medium">
+                    {formatEther(podData.contributions[index])} STT
+                  </p>
+                  <p className="text-green-400 text-sm">
+                    {(Number(podData.aprs[index]) / 100).toFixed(1)}% APY
+                  </p>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-400 text-center py-4">No public pods available</p>
+          <p className="text-gray-400 text-center py-4">
+            No public pods available
+          </p>
         )}
       </div>
     </div>
@@ -556,15 +661,19 @@ const PublicPodsPreview = () => {
 
 const Page = () => {
   const { isConnected } = useAccount();
-  const [activeTab, setActiveTab] = useState('join');
+  const [activeTab, setActiveTab] = useState("join");
 
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold text-gray-300 mb-2">Connect Your Wallet</h2>
-          <p className="text-gray-500">Connect your wallet to join or create savings pods</p>
+          <h2 className="text-2xl font-bold text-gray-300 mb-2">
+            Connect Your Wallet
+          </h2>
+          <p className="text-gray-500">
+            Connect your wallet to join or create savings pods
+          </p>
         </div>
       </div>
     );
@@ -572,48 +681,45 @@ const Page = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Savings Pods</h1>
-        <p className="text-gray-400">Join friends or create group savings plans for higher yields</p>
+        <p className="text-gray-400">
+          Join friends or create group savings plans for higher yields
+        </p>
       </div>
 
-      {/* Top Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <WalletBalanceCard />
         <InfoCard />
         <PublicPodsPreview />
       </div>
 
-      {/* Main Content with Tabs */}
       <div className="bg-white/5 border border-white/10 rounded-md backdrop-blur">
-        {/* Tab Navigation */}
         <div className="flex space-x-1 bg-white/10 rounded-t-lg p-1">
           <button
-            onClick={() => setActiveTab('join')}
+            onClick={() => setActiveTab("join")}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'join'
-                ? 'bg-purple-600 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
+              activeTab === "join"
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-white/10"
             }`}
           >
             Join Pod
           </button>
           <button
-            onClick={() => setActiveTab('create')}
+            onClick={() => setActiveTab("create")}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'create'
-                ? 'bg-purple-600 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
+              activeTab === "create"
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-white/10"
             }`}
           >
             Create Pod
           </button>
         </div>
 
-        {/* Tab Content */}
         <div className="p-6">
-          {activeTab === 'join' ? <JoinPodTab /> : <CreatePodTab />}
+          {activeTab === "join" ? <JoinPodTab /> : <CreatePodTab />}
         </div>
       </div>
     </div>
