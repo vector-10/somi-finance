@@ -125,13 +125,23 @@ const JoinPodTab = () => {
   };
 
   const handleJoinPod = async () => {
-    if (!podDetails || !podId || !podDetails.contributionAmount) return;
+    const contributionAmount = (podDetails as any)?.[7];
+    
+    console.log("=== JOIN POD DEBUG ===");
+    console.log("Pod ID:", podId);
+    console.log("Raw contribution amount (bigint):", contributionAmount);
+    console.log("Formatted contribution amount:", formatEther(contributionAmount));
+    console.log("Pod activated:", (podDetails as any)?.[8]);
+    console.log("Pod cancelled:", (podDetails as any)?.[11]);
+    console.log("Members joined:", (podDetails as any)?.[12]);
+    
+    if (!podDetails || !podId || !contributionAmount) return;
     
     try {
       toast.loading("Joining pod...", { id: "join-pod" });
       await joinPod({
         podId: BigInt(podId),
-        amountEth: formatEther(podDetails.contributionAmount),
+        amountEth: formatEther(contributionAmount),
       });
     } catch (err) {
       console.error("Join pod failed:", err);
@@ -139,13 +149,14 @@ const JoinPodTab = () => {
     }
   };
 
-
+  // Handle join success
   useEffect(() => {
     if (isSuccess) {
       toast.success("Successfully joined pod! Check your dashboard.", { id: "join-pod" });
     }
   }, [isSuccess]);
 
+  // Handle join error
   useEffect(() => {
     if (error) {
       toast.error(`Error: ${error.message}`, { id: "join-pod" });
@@ -175,9 +186,9 @@ const JoinPodTab = () => {
   const podExists =
     podDetails &&
     podDetails.creator !== "0x0000000000000000000000000000000000000000";
-    const contributionAmount = podDetails?.contributionAmount 
-    ? formatEther(podDetails.contributionAmount)
-    : "0";
+    const contributionAmount = (podDetails as any)?.[7]
+  ? formatEther((podDetails as any)[7])
+  : "0";
   const currentMembers = memberCount?.membersJoined ? Number(memberCount.membersJoined) : 0;
   const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
   const status = getPodStatus();
@@ -452,7 +463,7 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
       }
       
       onPodCreated?.();
-    } catch (err) {
+    } catch (err) {PodsP
       console.error("Create pod failed:", err);
       toast.error("Failed to create pod", { id: "create-pod" });
     }

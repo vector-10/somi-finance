@@ -97,7 +97,7 @@ const SavingsSummaryCard = () => {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-      <h3 className="text-lg font-semibold text-white mb-4">Active Savings</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">Active Solo Savings</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <p className="text-2xl font-bold text-white">{totalLocked.toFixed(2)}</p>
