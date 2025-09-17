@@ -3,6 +3,15 @@ import { parseEther, decodeEventLog } from 'viem'
 import { waitForTransactionReceipt } from 'wagmi/actions'
 import { contracts } from '../lib/contracts'
 
+interface CreatePodParams {
+  name: string;
+  description: string;
+  isPublic: boolean;
+  contributionAmountEth: string;
+  planType: number;
+  customDays?: number;
+}
+
 export function useVault() {
   const { writeContract, writeContractAsync, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
@@ -15,47 +24,52 @@ export function useVault() {
     contributionAmountEth,
     planType,
     customDays = 0
-  }: {
-    name: string;
-    description: string;
-    isPublic: boolean;
-    contributionAmountEth: string;
-    planType: number;
-    customDays?: number;
-  }) => {
-    const hash = await writeContractAsync({
-      ...contracts.podsVault,
-      functionName: 'createPod',
-      args: [
-        name,
-        description,
-        isPublic,
-        parseEther(contributionAmountEth),
-        planType,
-        customDays
-      ]
-    })
+  }:CreatePodParams) => {
+
     
-    const receipt = await waitForTransactionReceipt(config, { hash })
-    
-    let podId: bigint | undefined
-    for (const log of receipt.logs) {
-      try {
-        const ev = decodeEventLog({ 
-          abi: contracts.podsVault.abi, 
-          data: log.data, 
-          topics: log.topics, 
-          strict: false 
-        })
-        if (ev.eventName === 'PodCreated' && ev.args && typeof ev.args === 'object' && 'podId' in ev.args) { 
-          podId = ev.args.podId as bigint
-          break 
+    try {
+      const hash = await writeContractAsync({
+        ...contracts.podsVault,
+        functionName: 'createPod',
+        args: [
+          name,
+          description,
+          isPublic,
+          parseEther(contributionAmountEth),
+          planType,
+          customDays
+        ]
+      });      
+      const receipt = await waitForTransactionReceipt(config, { hash });
+      
+      let podId: bigint | undefined;
+      for (const log of receipt.logs) {
+        try {
+          const ev = decodeEventLog({ 
+            abi: contracts.podsVault.abi, 
+            data: log.data, 
+            topics: log.topics, 
+            strict: false 
+          });
+          console.log("Decoded event:", ev);
+          if (ev.eventName === 'PodCreated') {
+            console.log("Found PodCreated event!");
+            console.log("Event args:", ev.args);
+            podId = ev.args.podId as bigint;
+            break;
+          }
+        } catch (logError) {
+          console.log("Error decoding log:", logError);
         }
-      } catch {}
+      }
+      
+      return { hash, podId };
+    } catch (error) {
+      console.error("=== CREATE POD ERROR ===");
+      console.error("Error details:", error);
+      throw error;
     }
-    
-    return { hash, podId }
-  }
+  };
 
   const joinPod = async (podId: bigint) => {
     writeContract({
@@ -66,12 +80,25 @@ export function useVault() {
   }
 
   const joinPodWithAmount = async ({ podId, amountEth }: { podId: bigint; amountEth: string }) => {
-    writeContract({
-      ...contracts.podsVault,
-      functionName: 'joinPod',
-      args: [podId],
-      value: parseEther(amountEth)
-    })
+    console.log("=== JOIN POD START ===");
+    console.log("Pod ID:", podId);
+    console.log("Amount ETH:", amountEth);
+    console.log("Parsed amount:", parseEther(amountEth));
+    
+    try {
+      const result = writeContract({
+        ...contracts.podsVault,
+        functionName: 'joinPod',
+        args: [podId],
+        value: parseEther(amountEth)
+      });
+      console.log("Join pod transaction submitted");
+      return result;
+    } catch (error) {
+      console.error("=== JOIN POD ERROR ===");
+      console.error(error);
+      throw error;
+    }
   }
 
   const leavePod = async (podId: bigint) => {

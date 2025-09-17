@@ -124,8 +124,8 @@ const JoinPodTab = () => {
   };
 
   const handleJoinPod = async () => {
-    if (!podDetails || !podId) return;
-
+    if (!podDetails || !podId || !podDetails.contributionAmount) return;
+  
     try {
       toast.loading("Joining pod...", { id: "join-pod" });
       await joinPodWithAmount({
@@ -177,7 +177,7 @@ const JoinPodTab = () => {
     const contributionAmount = podDetails?.contributionAmount 
     ? formatEther(podDetails.contributionAmount)
     : "0";
-  const currentMembers = memberCount ? Number(memberCount.membersJoined) : 0;
+  const currentMembers = memberCount?.membersJoined ? Number(memberCount.membersJoined) : 0;
   const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
   const status = getPodStatus();
 
@@ -247,8 +247,8 @@ const JoinPodTab = () => {
                     {podDetails.description}
                   </p>
                   <p className="text-gray-400 text-xs">
-                    Created by {podDetails.creator.slice(0, 6)}...
-                    {podDetails.creator.slice(-4)}
+                    Created by {podDetails?.creator?.slice(0, 6) || "Unknown"}...
+                    {podDetails?.creator?.slice(-4) || ""}
                   </p>
                 </div>
                 <div className="text-right">
