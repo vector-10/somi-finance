@@ -24,6 +24,7 @@ interface PodDetails {
   contributionAmount: bigint;
   activated: boolean;
   cancelled: boolean;
+  closedForJoining: boolean;
   startTime: number;
   maturityTime: number;
   membersJoined: number;
@@ -124,23 +125,13 @@ const JoinPodTab = () => {
   };
 
   const handleJoinPod = async () => {
-    const contributionAmount = (podDetails as any)?.[7];
-    
-    console.log("=== JOIN POD DEBUG ===");
-    console.log("Pod ID:", podId);
-    console.log("Raw contribution amount (bigint):", contributionAmount);
-    console.log("Formatted contribution amount:", formatEther(contributionAmount));
-    console.log("Pod activated:", (podDetails as any)?.[8]);
-    console.log("Pod cancelled:", (podDetails as any)?.[11]);
-    console.log("Members joined:", (podDetails as any)?.[12]);
-    
-    if (!podDetails || !podId || !contributionAmount) return;
+    if (!podDetails || !podId || !podDetails.contributionAmount) return;
     
     try {
       toast.loading("Joining pod...", { id: "join-pod" });
       await joinPod({
         podId: BigInt(podId),
-        amountEth: formatEther(contributionAmount),
+        amountEth: formatEther(podDetails.contributionAmount),
       });
     } catch (err) {
       console.error("Join pod failed:", err);
@@ -148,14 +139,13 @@ const JoinPodTab = () => {
     }
   };
 
-  // Handle join success
+
   useEffect(() => {
     if (isSuccess) {
       toast.success("Successfully joined pod! Check your dashboard.", { id: "join-pod" });
     }
   }, [isSuccess]);
 
-  // Handle join error
   useEffect(() => {
     if (error) {
       toast.error(`Error: ${error.message}`, { id: "join-pod" });
@@ -462,7 +452,7 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
       }
       
       onPodCreated?.();
-    } catch (err) {
+    } catch (err) {PodsP
       console.error("Create pod failed:", err);
       toast.error("Failed to create pod", { id: "create-pod" });
     }

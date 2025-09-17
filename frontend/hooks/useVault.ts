@@ -50,10 +50,10 @@ export function useVault() {
             strict: false 
           });
           console.log("Decoded event:", ev);
-          if (ev.eventName === 'PodCreated') {
+          if (ev.eventName === 'PodCreated' && ev.args && ev.args.length > 0) {
             console.log("Found PodCreated event!");
             console.log("Event args:", ev.args);
-            podId = ev.args.podId as bigint;
+            podId = ev.args[0] as bigint;
             break;
           }
         } catch (logError) {
@@ -91,7 +91,6 @@ export function useVault() {
       throw error;
     }
   }
-
 
 
   const leavePod = async (podId: bigint) => {
@@ -151,7 +150,7 @@ export function useVault() {
 
   return {
     createPod,
-    joinPod, // Now this is the unified function that includes amount
+    joinPod, 
     leavePod,
     cancelPod,
     closeForJoining,
