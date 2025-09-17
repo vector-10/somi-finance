@@ -175,9 +175,9 @@ const JoinPodTab = () => {
   const podExists =
     podDetails &&
     podDetails.creator !== "0x0000000000000000000000000000000000000000";
-    const contributionAmount = (podDetails as any)?.[7]
-  ? formatEther((podDetails as any)[7])
-  : "0";
+    const contributionAmount = podDetails?.contributionAmount 
+    ? formatEther(podDetails.contributionAmount)
+    : "0";
   const currentMembers = memberCount?.membersJoined ? Number(memberCount.membersJoined) : 0;
   const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
   const status = getPodStatus();
@@ -452,7 +452,7 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
       }
       
       onPodCreated?.();
-    } catch (err) {PodsP
+    } catch (err) {
       console.error("Create pod failed:", err);
       toast.error("Failed to create pod", { id: "create-pod" });
     }
