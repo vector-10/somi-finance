@@ -82,6 +82,18 @@ const JoinPodTab = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
 
+  const { data: publicPods } = usePublicPods() as { data: PublicPodsResult | undefined };
+  const podData = publicPods
+  ? {
+      ids: publicPods[0] || [],
+      names: publicPods[1] || [],
+      planTypes: publicPods[2] || [],
+      aprs: publicPods[3] || [],
+      contributions: publicPods[4] || [],
+      joinedCounts: publicPods[5] || [],
+    }
+  : null;
+
   const {
     data: podDetails,
     isLoading: isLoadingDetails,
@@ -328,6 +340,51 @@ const JoinPodTab = () => {
           )}
         </div>
       </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
+  <h3 className="text-lg font-bold text-white mb-4">
+    {podId ? `Search Results for Pod #${podId}` : 'Available Public Pods'}
+  </h3>
+  
+      <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+        {podData && podData.ids.length > 0 ? (
+          podData.ids
+            .filter((id: bigint) => podId ? id.toString() === podId : true)
+            .map((id: bigint, originalIndex: number) => {
+              const index = podData.ids.indexOf(id);
+              return (
+                <div key={index} className="bg-white/10 rounded-lg p-4 border border-white/20">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="text-white font-semibold">{podData.names[index]}</h4>
+                        <p className="text-gray-400 text-sm">Pod #{id.toString()} • {podData.joinedCounts[index]}/5 members</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="px-2 py-1 bg-green-600 text-white rounded text-xs font-bold">
+                          {(Number(podData.aprs[index]) / 100).toFixed(1)}% APY
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">{formatEther(podData.contributions[index])} STT</span>
+                      <button 
+                          onClick={() => {
+                            setPodId(id.toString());
+                            setSearchAttempted(true);
+                          }}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm"
+                        >
+                          View Details
+                        </button>
+                    </div>
+                  </div>
+              );
+            })
+        ) : (
+          <p className="text-gray-400 text-center py-8">No pods found</p>
+        )}
+      </div>
+    </div>
     </div>
   );
 };
@@ -629,24 +686,16 @@ const PublicPodsPreview = () => {
     refetch: () => void;
   };
 
-  console.log("Raw publicPods data:", publicPods);
-  console.log("publicPods type:", typeof publicPods);
-  console.log("publicPods structure:", publicPods ? Object.keys(publicPods) : "no data");
-
-
   const podData = publicPods
-    ? {
-        ids: publicPods[0] || [],
-        names: publicPods[1] || [],
-        planTypes: publicPods[2] || [],
-        aprs: publicPods[3] || [],
-        contributions: publicPods[4] || [],
-        joinedCounts: publicPods[5] || [],
-      }
-    : null;
-
-    console.log("Processed podData:", podData);
-  console.log("Pod IDs array:", podData?.ids);
+  ? {
+      ids: publicPods[0] || [],
+      names: publicPods[1] || [],
+      planTypes: publicPods[2] || [],
+      aprs: publicPods[3] || [],
+      contributions: publicPods[4] || [],
+      joinedCounts: publicPods[5] || [],
+    }
+  : null;
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
