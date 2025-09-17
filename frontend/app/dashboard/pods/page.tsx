@@ -110,8 +110,8 @@ const JoinPodTab = () => {
   
   const { data: isJoinable } = useIsJoinable(podId ? BigInt(podId) : BigInt(0)) as { data: boolean | undefined };
 
-  const { joinPodWithAmount, isPending, isConfirming, isSuccess, error } =
-    useVault();
+  // FIXED: Updated to use the single joinPod function
+  const { joinPod, isPending, isConfirming, isSuccess, error } = useVault();
 
   const searchPod = () => {
     if (!podId) {
@@ -124,13 +124,23 @@ const JoinPodTab = () => {
   };
 
   const handleJoinPod = async () => {
-    if (!podDetails || !podId || !podDetails.contributionAmount) return;
-  
+    const contributionAmount = (podDetails as any)?.[7];
+    
+    console.log("=== JOIN POD DEBUG ===");
+    console.log("Pod ID:", podId);
+    console.log("Raw contribution amount (bigint):", contributionAmount);
+    console.log("Formatted contribution amount:", formatEther(contributionAmount));
+    console.log("Pod activated:", (podDetails as any)?.[8]);
+    console.log("Pod cancelled:", (podDetails as any)?.[11]);
+    console.log("Members joined:", (podDetails as any)?.[12]);
+    
+    if (!podDetails || !podId || !contributionAmount) return;
+    
     try {
       toast.loading("Joining pod...", { id: "join-pod" });
-      await joinPodWithAmount({
+      await joinPod({
         podId: BigInt(podId),
-        amountEth: formatEther(podDetails.contributionAmount),
+        amountEth: formatEther(contributionAmount),
       });
     } catch (err) {
       console.error("Join pod failed:", err);
@@ -171,12 +181,13 @@ const JoinPodTab = () => {
     return 'FILLING';
   };
 
+
   const podExists =
     podDetails &&
     podDetails.creator !== "0x0000000000000000000000000000000000000000";
-    const contributionAmount = podDetails?.contributionAmount 
-    ? formatEther(podDetails.contributionAmount)
-    : "0";
+    const contributionAmount = (podDetails as any)?.[7]
+  ? formatEther((podDetails as any)[7])
+  : "0";
   const currentMembers = memberCount?.membersJoined ? Number(memberCount.membersJoined) : 0;
   const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
   const status = getPodStatus();

@@ -24,9 +24,7 @@ export function useVault() {
     contributionAmountEth,
     planType,
     customDays = 0
-  }:CreatePodParams) => {
-
-    
+  }: CreatePodParams) => {
     try {
       const hash = await writeContractAsync({
         ...contracts.podsVault,
@@ -71,28 +69,21 @@ export function useVault() {
     }
   };
 
-  const joinPod = async (podId: bigint) => {
-    writeContract({
-      ...contracts.podsVault,
-      functionName: 'joinPod',
-      args: [podId],
-    })
-  }
-
-  const joinPodWithAmount = async ({ podId, amountEth }: { podId: bigint; amountEth: string }) => {
+  // FIXED: Remove the old joinPod function and consolidate into one
+  const joinPod = async ({ podId, amountEth }: { podId: bigint; amountEth: string }) => {
     console.log("=== JOIN POD START ===");
     console.log("Pod ID:", podId);
     console.log("Amount ETH:", amountEth);
     console.log("Parsed amount:", parseEther(amountEth));
     
     try {
-      const result = writeContract({
+      const result = await writeContractAsync({
         ...contracts.podsVault,
         functionName: 'joinPod',
         args: [podId],
         value: parseEther(amountEth)
       });
-      console.log("Join pod transaction submitted");
+      console.log("Join pod transaction submitted:", result);
       return result;
     } catch (error) {
       console.error("=== JOIN POD ERROR ===");
@@ -101,12 +92,21 @@ export function useVault() {
     }
   }
 
+
+
   const leavePod = async (podId: bigint) => {
-    writeContract({
-      ...contracts.podsVault,
-      functionName: 'leavePod',
-      args: [podId]
-    })
+    try {
+      const result = await writeContractAsync({
+        ...contracts.podsVault,
+        functionName: 'leavePod',
+        args: [podId]
+      });
+      return result;
+    } catch (error) {
+      console.error("=== LEAVE POD ERROR ===");
+      console.error(error);
+      throw error;
+    }
   }
 
   const cancelPod = async (podId: bigint) => {
@@ -151,8 +151,7 @@ export function useVault() {
 
   return {
     createPod,
-    joinPod,
-    joinPodWithAmount,
+    joinPod, // Now this is the unified function that includes amount
     leavePod,
     cancelPod,
     closeForJoining,
