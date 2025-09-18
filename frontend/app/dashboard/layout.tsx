@@ -19,7 +19,7 @@ const tabs = [
     shortName: 'Home'
   },
   { 
-    name: 'Solo Deposit', 
+    name: 'Solo Savings', 
     href: '/dashboard/deposit', 
     icon: MdAccountBalanceWallet,
     shortName: 'Deposit'

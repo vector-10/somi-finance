@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAccount, useBalance } from "wagmi";
+import MyPods from "@/app/dashboard/components/MyPods";
 import { formatEther } from "viem";
 import { toast } from "sonner";
 import {
@@ -104,6 +105,8 @@ const JoinPodTab = () => {
     isLoading: boolean;
     error: any;
   };
+  console.log('JoinPod - Pod details:', result.data);
+  
   
   const { data: memberCount } = usePodMemberCount(
     podId ? BigInt(podId) : BigInt(0)
@@ -463,7 +466,7 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
       }
       
       onPodCreated?.();
-    } catch (err) {PodsP
+    } catch (err) {
       console.error("Create pod failed:", err);
       toast.error("Failed to create pod", { id: "create-pod" });
     }
@@ -792,7 +795,7 @@ const Page = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <WalletBalanceCard />
         <InfoCard />
-        <PublicPodsPreview />
+        <MyPods />
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-md backdrop-blur">
