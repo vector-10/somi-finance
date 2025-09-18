@@ -105,8 +105,8 @@ const JoinPodTab = () => {
     isLoading: boolean;
     error: any;
   };
-  console.log('JoinPod - Pod details:', result.data);
-  
+  console.log('JoinPod - Pod details:', podDetails);
+
   
   const { data: memberCount } = usePodMemberCount(
     podId ? BigInt(podId) : BigInt(0)
