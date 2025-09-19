@@ -154,6 +154,9 @@ const MyPods: React.FC = () => {
   const [selectedPod, setSelectedPod] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  console.log('joinedPods count:', joinedPods.length);
+  console.log('joinedPods:', joinedPods);
+
   const openModal = (pod: any) => {
     setSelectedPod(pod);
     setIsModalOpen(true);
