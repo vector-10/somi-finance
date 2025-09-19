@@ -103,57 +103,32 @@ export default function SomiFinanceLanding() {
         </div>
       </div>
 
-      <section className="relative mx-auto max-w-7xl px-4 pt-22 md:pt-30">
-        <div className="grid items-center gap-10 md:grid-cols-2">
-          <div className="space-y-6 scroll-reveal">
-            <span className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
-              <Wallet className="h-4 w-4" /> Built for Somnia Testnet
-            </span>
-            <h1 className="text-balance text-4xl font-extrabold tracking-tight md:text-6xl">
-              The Future of <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-300 to-indigo-200">Social Savings</span>
-            </h1>
-            <p className="max-w-xl text-lg leading-relaxed text-white/80">
-              Join friends in savings pods to earn up to 50% APY. Built for the next generation 
-              of DeFi users on Somnia's lightning-fast blockchain.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-sm bg-purple-600 px-5 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
-                Start Saving <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a href="#features" className="rounded-sm border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">View Demo</a>
-            </div>
-            <div className="flex flex-col md:flex-row font-bold gap-6 pt-2 text-white/70">
-              <div className="flex items-center gap-2"><Shield className="h-4 w-4"/> Enterprise Security</div>
-              <div className="flex items-center gap-2"><Lock className="h-4 w-4"/> Self-custody</div>
-              {/* <div className="flex items-center gap-2"><Chart className="h-4 w-4"/> Transparent APY</div> */}
-            </div>
+      <section className="relative mx-auto max-w-5xl px-4 pt-32 pb-20 text-center">
+        <div className="space-y-8 scroll-reveal">
+          <span className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
+            <Wallet className="h-4 w-4" /> Built for Somnia Testnet
+          </span>
+          
+          <h1 className="text-balance text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
+            The Future of <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-300">Social Savings</span>
+          </h1>
+          
+          <p className="mx-auto max-w-3xl text-lg leading-relaxed text-white/80 md:text-xl">
+            Join friends in savings pods to earn up to 50% APY. Built for the next generation 
+            of DeFi users on Somnia's lightning-fast blockchain.
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-sm bg-purple-600 px-6 py-4 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all">
+              Start Saving <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a href="#features" className="rounded-sm border border-white/20 bg-white/5 px-6 py-4 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all">View Demo</a>
           </div>
-
-          <div className="relative scroll-reveal">
-            <div className="rounded-sm border border-white/10 bg-white/5 p-6 backdrop-blur">
-              <div className="mb-4 flex items-center gap-2 text-white/80">
-                <Wallet className="h-5 w-5" /> <span>Protocol Snapshot</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-white">
-                <div className="rounded-sm border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm text-white/70">Max APY</div>
-                  <div className="text-2xl font-semibold">50%</div>
-                </div>
-                <div className="rounded-sm border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm text-white/70">Max Pod Size</div>
-                  <div className="text-2xl font-semibold">5</div>
-                </div>
-                <div className="rounded-sm border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm text-white/70">Savings Plans</div>
-                  <div className="text-2xl font-semibold">3</div>
-                </div>
-                <div className="rounded-sm border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm text-white/70">Transaction Time</div>
-                  <div className="text-2xl font-semibold">0.1s</div>
-                </div>
-              </div>
-            </div>
-            <div className="pointer-events-none absolute -inset-10 -z-10 blur-3xl [background:radial-gradient(100px_80px_at_70%_20%,rgba(147,102,255,0.35),transparent),radial-gradient(160px_140px_at_20%_60%,rgba(99,102,241,0.25),transparent)]"/>
+          
+          <div className="flex flex-wrap justify-center font-bold gap-8 pt-6 text-white/70">
+            <div className="flex items-center gap-2"><Shield className="h-4 w-4"/> Enterprise Security</div>
+            <div className="flex items-center gap-2"><Lock className="h-4 w-4"/> Self-custody</div>
+            {/* <div className="flex items-center gap-2"><Chart className="h-4 w-4"/> Transparent APY</div> */}
           </div>
         </div>
       </section>
