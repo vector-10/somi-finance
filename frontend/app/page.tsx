@@ -96,7 +96,7 @@ export default function SomiFinanceLanding() {
             
             <div className="pt-4 text-center">
               <p className="text-sm text-white/60">
-                Built for Somnia Testnet
+                Built for Somnia Ecosystem
               </p>
             </div>
           </div>
