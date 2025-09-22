@@ -47,16 +47,6 @@ interface PublicPodsResult {
   5: number[];
 }
 
-interface UseVaultHook {
-  createPod: (params: any) => Promise<{ podId: bigint }>;
-  joinPod: (params: { podId: bigint; amountEth: string }) => Promise<void>;
-  closeForJoining: (podId: bigint) => Promise<void>;
-  isPending: boolean;
-  isConfirming: boolean;
-  isSuccess: boolean;
-  error: Error | null;
-  hash: string | null;
-}
 
 const WalletBalanceCard = () => {
   const { address } = useAccount();
@@ -107,14 +97,16 @@ const JoinPodTab = () => {
     }
   : null;
 
+
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const {
     data: podDetails,
     isLoading: isLoadingDetails,
-    error: podError,
+    error: podError
   } = usePodDetails(podId ? BigInt(podId) : BigInt(0)) as {
     data: PodDetails | undefined;
     isLoading: boolean;
-    error: any;
+    error: Error | null;
   };
   console.log('JoinPod - Pod details:', podDetails);
 
@@ -192,11 +184,12 @@ const JoinPodTab = () => {
   const podExists =
     podDetails &&
     podDetails.creator !== "0x0000000000000000000000000000000000000000";
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const contributionAmount = (podDetails as any)?.[7]
   ? formatEther((podDetails as any)[7])
   : "0";
   const currentMembers = memberCount?.membersJoined ? Number(memberCount.membersJoined) : 0;
-  const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
+  // const activeMembers = memberCount ? Number(memberCount.activeMembers) : 0;
   const status = getPodStatus();
 
   const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
@@ -368,7 +361,7 @@ const JoinPodTab = () => {
         {podData && podData.ids.length > 0 ? (
           podData.ids
             .filter((id: bigint) => podId ? id.toString() === podId : true)
-            .map((id: bigint, originalIndex: number) => {
+            .map((id: bigint) => {
               const index = podData.ids.indexOf(id);
               return (
                 <div key={index} className="bg-white/10 rounded-lg p-4 border border-white/20">
@@ -416,7 +409,8 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
   const [customDays, setCustomDays] = useState("");
   const [createdPodId, setCreatedPodId] = useState<string | null>(null);
 
-  const { createPod, closeForJoining, isPending, isConfirming, isSuccess, error, hash } =
+// closeForJoining, isSuccess and hash was removed from the object below
+  const { createPod, isPending, isConfirming,  error } =
     useVault();
 
   const terms = [
@@ -698,68 +692,68 @@ const CreatePodTab = ({ onPodCreated }: { onPodCreated?: () => void }) => {
   );
 };
 
-const PublicPodsPreview = () => {
-  const { data: publicPods, refetch } = usePublicPods() as {
-    data: PublicPodsResult | undefined;
-    refetch: () => void;
-  };
+// const PublicPodsPreview = () => {
+//   const { data: publicPods, refetch } = usePublicPods() as {
+//     data: PublicPodsResult | undefined;
+//     refetch: () => void;
+//   };
 
-  const podData = publicPods
-  ? {
-      ids: publicPods[0] || [],
-      names: publicPods[1] || [],
-      planTypes: publicPods[2] || [],
-      aprs: publicPods[3] || [],
-      contributions: publicPods[4] || [],
-      joinedCounts: publicPods[5] || [],
-    }
-  : null;
+//   const podData = publicPods
+//   ? {
+//       ids: publicPods[0] || [],
+//       names: publicPods[1] || [],
+//       planTypes: publicPods[2] || [],
+//       aprs: publicPods[3] || [],
+//       contributions: publicPods[4] || [],
+//       joinedCounts: publicPods[5] || [],
+//     }
+//   : null;
 
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-white">Recent Public Pods</h3>
-        <button
-          onClick={() => refetch()}
-          className="text-purple-400 hover:text-purple-300 text-sm"
-        >
-          Refresh
-        </button>
-      </div>
-      <div className="space-y-3">
-        {podData && podData.ids.length > 0 ? (
-          podData.ids.slice(0, 3).map((id: bigint, index: number) => (
-            <div key={index} className="bg-white/10 rounded-md p-3">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-white font-medium">
-                    {podData.names[index]}
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    Pod #{id.toString()} •{" "}
-                    {podData.joinedCounts[index].toString()}/5 members
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-purple-300 font-medium">
-                    {formatEther(podData.contributions[index])} STT
-                  </p>
-                  <p className="text-green-400 text-sm">
-                    {(Number(podData.aprs[index]) / 100).toFixed(1)}% APY
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-400 text-center py-4">
-            No public pods available
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
+//   return (
+//     <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
+//       <div className="flex justify-between items-center mb-4">
+//         <h3 className="text-lg font-semibold text-white">Recent Public Pods</h3>
+//         <button
+//           onClick={() => refetch()}
+//           className="text-purple-400 hover:text-purple-300 text-sm"
+//         >
+//           Refresh
+//         </button>
+//       </div>
+//       <div className="space-y-3">
+//         {podData && podData.ids.length > 0 ? (
+//           podData.ids.slice(0, 3).map((id: bigint, index: number) => (
+//             <div key={index} className="bg-white/10 rounded-md p-3">
+//               <div className="flex justify-between items-center">
+//                 <div>
+//                   <p className="text-white font-medium">
+//                     {podData.names[index]}
+//                   </p>
+//                   <p className="text-gray-400 text-sm">
+//                     Pod #{id.toString()} •{" "}
+//                     {podData.joinedCounts[index].toString()}/5 members
+//                   </p>
+//                 </div>
+//                 <div className="text-right">
+//                   <p className="text-purple-300 font-medium">
+//                     {formatEther(podData.contributions[index])} STT
+//                   </p>
+//                   <p className="text-green-400 text-sm">
+//                     {(Number(podData.aprs[index]) / 100).toFixed(1)}% APY
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           ))
+//         ) : (
+//           <p className="text-gray-400 text-center py-4">
+//             No public pods available
+//           </p>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
 
 const Page = () => {
   const { isConnected } = useAccount();

@@ -27,7 +27,7 @@ const TotalClaimableCard = () => {
   const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   const userPositions = positions?.[0] || [];
-  const { closePosition, isPending, isConfirming, isSuccess, error, hash } = usePool();
+  const { isPending, isConfirming, isSuccess, error, hash } = usePool();
 
   useEffect(() => {
     if (isPending) {
@@ -145,6 +145,8 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
   const { closePosition, isPending, isConfirming, isSuccess, error, hash } = usePool();
   const { data: interest } = usePreviewInterest(position.id);
   
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useEffect(() => {
     const positionId = position.id.toString();
     const planName = getPlanName(position.planType);

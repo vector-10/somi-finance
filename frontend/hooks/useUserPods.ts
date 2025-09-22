@@ -70,6 +70,7 @@ export function useUserPods() {
             })
           ]);
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const podData = podDetails as any;
           const memberData = membership as MembershipStatus;
           console.log('MyPods - Pod details:', podData);
@@ -152,7 +153,7 @@ export function useUserPods() {
                   args: [id, address as `0x${string}`]
                 })
               ]);
-
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const podData = podDetails as any;
               const memberData = membership as MembershipStatus;
 
