@@ -9,18 +9,20 @@ import { formatEther } from 'viem';
 import { useUserPositions, usePreviewInterest } from '../../hooks/usePool';
 import { usePublicPods } from '../../hooks/useVault';
 
+interface Position {
+  id: bigint;
+  planType: number;
+  principal: bigint;
+  start: number;
+  term: number;
+  aprBps: number;
+  closed: boolean;
+  receiptId: bigint;
+}
+
 interface UserPositionsResult {
-  0: Array<{
-    id: bigint;
-    planType: number;
-    principal: bigint;
-    start: number;
-    term: number;
-    aprBps: number;
-    closed: boolean;
-    receiptId: bigint;
-  }>;
-  1: bigint;
+  0: Position[];
+  1: bigint;    
 }
 
 interface PublicPodsResult {
@@ -61,12 +63,12 @@ const WalletOverviewCard = () => {
 
 const SavingsSummaryCard = () => {
   const { address } = useAccount();
-  const { data: rawPositions, isLoading } = useUserPositions(address || '', BigInt(0), BigInt(50));
+  const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   
   const userPositions = positions?.[0] || [];
   
-  const totalLocked = userPositions.reduce((sum: number, pos) => 
+  const totalLocked = userPositions.reduce((sum: number, pos: Position) => 
     pos.closed ? sum : sum + parseFloat(formatEther(pos.principal)), 0
   );
 
@@ -207,7 +209,7 @@ const StreakCard = () => {
   );
 };
 
-const SoloPlanCard = ({ position }: { position: any }) => {
+const SoloPlanCard = ({ position }: { position: Position }) => {
   const { data: interest } = usePreviewInterest(position.id);
   const interestAmount = interest && typeof interest === 'bigint' ? formatEther(interest) : '0';
   
@@ -216,7 +218,7 @@ const SoloPlanCard = ({ position }: { position: any }) => {
     return types[planType] || 'Unknown';
   };
   
-  const getStatus = (position: any) => {
+  const getStatus = (position: Position) => {
     if (position.closed) return 'claimed';
     if (position.planType === 0 || position.planType === 1) return 'active'; 
     if (position.term > 0) {

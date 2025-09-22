@@ -4,8 +4,22 @@ import { toast } from 'sonner';
 import { useUserPods } from '@/hooks/useUserPods';
 import { useVault } from '@/hooks/useVault';
 
+interface Pod {
+  id: bigint;
+  name: string;
+  description: string;
+  status: 'FILLING' | 'ACTIVE' | 'FULL' | 'CLOSED' | 'CANCELLED';
+  planType: number;
+  contributionAmount: bigint;
+  membersJoined: number;
+  userRole: 'creator' | 'member';
+  canCancel?: boolean;
+  canClose?: boolean;
+  canLeave?: boolean;
+}
+
 interface PodModalProps {
-  pod: any;
+  pod: Pod;
   isOpen: boolean;
   onClose: () => void;
   onRefetch: () => void;
@@ -35,7 +49,7 @@ const PodModal: React.FC<PodModalProps> = ({ pod, isOpen, onClose, onRefetch }) 
       toast.success(`${action} successful!`, { id: 'pod-action' });
       onRefetch(); 
       onClose();
-    } catch (error) {
+    } catch {
       toast.error(`${action} failed`, { id: 'pod-action' });
     }
   };
@@ -151,13 +165,13 @@ const PodModal: React.FC<PodModalProps> = ({ pod, isOpen, onClose, onRefetch }) 
 
 const MyPods: React.FC = () => {
   const { userPods, isLoading, createdPods, joinedPods, refetchUserPods } = useUserPods();
-  const [selectedPod, setSelectedPod] = useState(null);
+  const [selectedPod, setSelectedPod] = useState<Pod | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   console.log('joinedPods count:', joinedPods.length);
   console.log('joinedPods:', joinedPods);
 
-  const openModal = (pod: any) => {
+  const openModal = (pod: Pod) => {
     setSelectedPod(pod);
     setIsModalOpen(true);
   };

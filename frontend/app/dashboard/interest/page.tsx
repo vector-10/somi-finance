@@ -3,6 +3,37 @@
 import React, { useState, useEffect } from 'react';
 import { TbMoneybag } from "react-icons/tb";
 
+
+interface CalculationResults {
+  principal: number;
+  totalInterest: number;
+  totalAmount: number;
+  dailyInterest: number;
+  apy: number;
+  days: number;
+}
+
+interface APYRates {
+  single: {
+    flex: number;
+    custom: number;
+    '6m': number;
+    '1y': number;
+    '2y': number;
+  };
+  pods: {
+    flex: number;
+    custom: number;
+    '6m': number;
+    '1y': number;
+    '2y': number;
+  };
+}
+
+type SavingsType = 'single' | 'pods';
+type PlanType = 'flex' | 'custom' | '6m' | '1y' | '2y';
+type DurationUnit = 'days' | 'months' | 'years';
+
 const Page = () => {
   const [amount, setAmount] = useState('');
   const [duration, setDuration] = useState('');
@@ -10,34 +41,34 @@ const Page = () => {
   const [savingsType, setSavingsType] = useState('single');
   const [planType, setPlanType] = useState('custom');
   const [isCalculating, setIsCalculating] = useState(false);
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<CalculationResults | null>(null);
 
-  // APY rates structure
-  const apyRates = {
+
+  const apyRates: APYRates = {
     single: {
       flex: 10,
-      custom: 12, // up to 150 days
+      custom: 12, 
       '6m': 18,
       '1y': 20,
       '2y': 30
     },
     pods: {
       flex: 12,
-      custom: 15, // up to 150 days
+      custom: 15, 
       '6m': 20,
       '1y': 25,
       '2y': 50
     }
   };
 
-  const getAPY = (type, plan, days) => {
+  const getAPY = (type: SavingsType, plan: PlanType, days: number): number =>{
     if (plan === 'custom') {
       return days <= 150 ? apyRates[type].custom : apyRates[type]['6m'];
     }
     return apyRates[type][plan];
   };
 
-  const convertDurationToDays = (value, unit) => {
+  const convertDurationToDays = (value: string, unit: DurationUnit): number => {
     const numValue = parseFloat(value);
     switch (unit) {
       case 'days': return numValue;
@@ -54,10 +85,9 @@ const Page = () => {
     
     setTimeout(() => {
       const principal = parseFloat(amount);
-      const days = convertDurationToDays(duration, durationUnit);
-      const apy = getAPY(savingsType, planType, days);
+      const days = convertDurationToDays(duration, durationUnit as DurationUnit);
+      const apy = getAPY(savingsType as SavingsType, planType as PlanType, days);
       
-      // Simple interest calculation: Principal * (APY/100) * (Days/365)
       const totalInterest = principal * (apy / 100) * (days / 365);
       const totalAmount = principal + totalInterest;
       const dailyInterest = totalInterest / days;
@@ -74,6 +104,7 @@ const Page = () => {
     }, 2000); // 2 second loader
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (amount && duration) {
       calculateInterest();
@@ -231,10 +262,10 @@ const Page = () => {
                 <span className="px-3 py-1 text-green-600 border border-green-600 rounded-sm text-sm font-bold">
                   {(() => {
                     if (planType === 'custom' || planType === 'flex') {
-                      const days = convertDurationToDays(duration, durationUnit);
-                      return getAPY(savingsType, planType, days);
+                      const days = convertDurationToDays(duration, durationUnit as DurationUnit);
+                      return getAPY(savingsType as SavingsType, planType as PlanType, days)
                     }
-                    return getAPY(savingsType, planType, 0);
+                    return getAPY(savingsType as SavingsType, planType as PlanType, 0)
                   })()}% APY
                 </span>
               </div>

@@ -47,6 +47,17 @@ interface PublicPodsResult {
   5: number[];
 }
 
+interface UseVaultHook {
+  createPod: (params: any) => Promise<{ podId: bigint }>;
+  joinPod: (params: { podId: bigint; amountEth: string }) => Promise<void>;
+  closeForJoining: (podId: bigint) => Promise<void>;
+  isPending: boolean;
+  isConfirming: boolean;
+  isSuccess: boolean;
+  error: Error | null;
+  hash: string | null;
+}
+
 const WalletBalanceCard = () => {
   const { address } = useAccount();
   const { data: balance } = useBalance({ address });
@@ -128,15 +139,7 @@ const JoinPodTab = () => {
   };
 
   const handleJoinPod = async () => {
-    const contributionAmount = (podDetails as any)?.[7];
-    
-    console.log("=== JOIN POD DEBUG ===");
-    console.log("Pod ID:", podId);
-    console.log("Raw contribution amount (bigint):", contributionAmount);
-    console.log("Formatted contribution amount:", formatEther(contributionAmount));
-    console.log("Pod activated:", (podDetails as any)?.[8]);
-    console.log("Pod cancelled:", (podDetails as any)?.[11]);
-    console.log("Members joined:", (podDetails as any)?.[12]);
+    const contributionAmount = podDetails?.contributionAmount;
     
     if (!podDetails || !podId || !contributionAmount) return;
     

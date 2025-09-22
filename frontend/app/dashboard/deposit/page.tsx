@@ -3,24 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { VscLightbulbSparkle } from "react-icons/vsc";
 import { useAccount, useBalance } from 'wagmi';
-import { formatEther, parseEther } from 'viem';
+import { formatEther } from 'viem';
 import { usePool } from '@/hooks/usePool';
 import { PLAN_TYPES } from '@/lib/contracts';
 import { toast } from 'sonner';
 
-interface DepositParams {
-  planType: number;
-  customDays?: number;
-  amountEth: string;
-}
-
-interface TransactionState {
-  isPending: boolean;
-  isConfirming: boolean;
-  isSuccess: boolean;
-  error: Error | null;
-  hash: string | undefined;
-}
 
 const WalletBalanceCard = () => {
   const { address } = useAccount();
