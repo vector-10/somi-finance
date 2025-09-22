@@ -19,7 +19,7 @@ interface Pod {
 }
 
 interface PodModalProps {
-  pod: Pod;
+  pod: Pod | null; 
   isOpen: boolean;
   onClose: () => void;
   onRefetch: () => void;
