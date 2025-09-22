@@ -1,19 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VscLightbulbSparkle } from "react-icons/vsc";
 import { useAccount, useBalance } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import { usePool } from '@/hooks/usePool';
 import { PLAN_TYPES } from '@/lib/contracts';
-
+import { toast } from 'sonner';
 
 interface DepositParams {
   planType: number;
   customDays?: number;
   amountEth: string;
 }
-
 
 interface TransactionState {
   isPending: boolean;
@@ -58,10 +57,32 @@ const CalculatorTipCard = () => (
 
 const FlexSaveCard = () => {
   const [amount, setAmount] = useState('');
-  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
+  const { deposit, isPending, isConfirming, isSuccess, error, hash } = usePool();
+
+  useEffect(() => {
+    if (isPending) {
+      toast.loading('Initiating transaction...', { id: 'flex-deposit' });
+    } else if (isConfirming) {
+      toast.loading('Confirming transaction...', { id: 'flex-deposit' });
+    } else if (isSuccess) {
+      toast.success(`Flex Save deposit successful! ${amount} STT deposited at 10% APY`, { 
+        id: 'flex-deposit',
+        action: hash ? {
+          label: 'View Transaction',
+          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
+        } : undefined
+      });
+      setAmount('');
+    } else if (error) {
+      toast.error(`Deposit failed: ${error.message}`, { id: 'flex-deposit' });
+    }
+  }, [isPending, isConfirming, isSuccess, error, hash, amount]);
 
   const handleDeposit = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error('Please enter a valid deposit amount');
+      return;
+    }
     
     try {
       await deposit({
@@ -110,18 +131,6 @@ const FlexSaveCard = () => {
         >
           {isPending || isConfirming ? 'Processing...' : 'Deposit to Flex Save'}
         </button>
-
-        {error && (
-          <div className="text-red-400 text-sm mt-2">
-            Error: {error.message}
-          </div>
-        )}
-        
-        {isSuccess && (
-          <div className="text-green-400 text-sm mt-2">
-            Deposit successful! Check your dashboard.
-          </div>
-        )}
       </div>
     </div>
   );
@@ -130,14 +139,37 @@ const FlexSaveCard = () => {
 const CustomDurationCard = () => {
   const [amount, setAmount] = useState('');
   const [duration, setDuration] = useState('');
-  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
+  const { deposit, isPending, isConfirming, isSuccess, error, hash } = usePool();
   
-  const apy = 12; // Fixed 12% APY for custom duration
+  const apy = 12;
+
+  useEffect(() => {
+    if (isPending) {
+      toast.loading('Initiating custom duration deposit...', { id: 'custom-deposit' });
+    } else if (isConfirming) {
+      toast.loading('Confirming transaction...', { id: 'custom-deposit' });
+    } else if (isSuccess) {
+      toast.success(`Custom duration deposit successful! ${amount} STT locked for ${duration} days at 12% APY`, { 
+        id: 'custom-deposit',
+        action: hash ? {
+          label: 'View Transaction',
+          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
+        } : undefined
+      });
+      setAmount('');
+      setDuration('');
+    } else if (error) {
+      toast.error(`Deposit failed: ${error.message}`, { id: 'custom-deposit' });
+    }
+  }, [isPending, isConfirming, isSuccess, error, hash, amount, duration]);
 
   const handleDeposit = async () => {
-    if (!amount || !duration || parseFloat(amount) <= 0 || parseInt(duration) <= 0) return;
+    if (!amount || !duration || parseFloat(amount) <= 0 || parseInt(duration) <= 0) {
+      toast.error('Please enter valid amount and duration');
+      return;
+    }
     if (parseInt(duration) > 150) {
-      alert('Maximum duration is 150 days');
+      toast.error('Maximum duration is 150 days');
       return;
     }
     
@@ -209,17 +241,9 @@ const CustomDurationCard = () => {
           {isPending || isConfirming ? 'Processing...' : 'Deposit Custom Duration'}
         </button>
 
-        {error && (
-          <div className="text-red-400 text-sm mt-2">
-            Error: {error.message}
-          </div>
-        )}
-        
-        {isSuccess && (
-          <div className="text-green-400 text-sm mt-2">
-            Deposit successful! Check your dashboard.
-          </div>
-        )}
+        <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
+          ⚠️ Early withdrawal forfeits all interest. You'll only get your principal back.
+        </div>
       </div>
     </div>
   );
@@ -228,7 +252,7 @@ const CustomDurationCard = () => {
 const FixedTermCard = () => {
   const [selectedTerm, setSelectedTerm] = useState('6m');
   const [amount, setAmount] = useState('');
-  const { deposit, isPending, isConfirming, isSuccess, error } = usePool();
+  const { deposit, isPending, isConfirming, isSuccess, error, hash } = usePool();
   
   const terms = [
     { id: '6m', label: '6 Months', apy: 18, days: 180, planType: PLAN_TYPES.FIXED_6M },
@@ -238,8 +262,30 @@ const FixedTermCard = () => {
   
   const selectedTermData = terms.find(term => term.id === selectedTerm);
 
+  useEffect(() => {
+    if (isPending) {
+      toast.loading(`Initiating ${selectedTermData?.label} fixed term deposit...`, { id: 'fixed-deposit' });
+    } else if (isConfirming) {
+      toast.loading('Confirming transaction...', { id: 'fixed-deposit' });
+    } else if (isSuccess) {
+      toast.success(`${selectedTermData?.label} deposit successful! ${amount} STT locked at ${selectedTermData?.apy}% APY`, { 
+        id: 'fixed-deposit',
+        action: hash ? {
+          label: 'View Transaction',
+          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
+        } : undefined
+      });
+      setAmount('');
+    } else if (error) {
+      toast.error(`Deposit failed: ${error.message}`, { id: 'fixed-deposit' });
+    }
+  }, [isPending, isConfirming, isSuccess, error, hash, amount, selectedTermData]);
+
   const handleDeposit = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !selectedTermData) return;
+    if (!amount || parseFloat(amount) <= 0 || !selectedTermData) {
+      toast.error('Please enter a valid deposit amount');
+      return;
+    }
     
     try {
       await deposit({
@@ -264,12 +310,14 @@ const FixedTermCard = () => {
         </div>
       </div>
       
-      {/* Term Selection Tabs */}
       <div className="flex space-x-1 bg-white/10 rounded-lg p-1 mb-6">
         {terms.map((term) => (
           <button
             key={term.id}
-            onClick={() => setSelectedTerm(term.id)}
+            onClick={() => {
+              setSelectedTerm(term.id);
+              toast.info(`Selected ${term.label} plan with ${term.apy}% APY`);
+            }}
             disabled={isPending || isConfirming}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
               selectedTerm === term.id
@@ -324,19 +372,6 @@ const FixedTermCard = () => {
           {isPending || isConfirming ? 'Processing...' : `Lock ${selectedTermData?.label} Term`}
         </button>
 
-        {error && (
-          <div className="text-red-400 text-sm mt-2">
-            Error: {error.message}
-          </div>
-        )}
-        
-        {isSuccess && (
-          <div className="text-green-400 text-sm mt-2">
-            Deposit successful! Check your dashboard.
-          </div>
-        )}
-
-        {/* Warning for fixed terms */}
         <div className="text-yellow-400 text-xs mt-2 p-2 bg-yellow-900/20 border border-yellow-600 rounded">
           ⚠️ Early withdrawal forfeits all interest. You'll only get your principal back.
         </div>
@@ -362,13 +397,11 @@ const Page = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Solo Deposit</h1>
         <p className="text-gray-400">Choose your savings plan and start earning yields on Somnia</p>
       </div>
 
-      {/* Top Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <WalletBalanceCard />
         <div className="lg:col-span-2">
@@ -376,13 +409,11 @@ const Page = () => {
         </div>
       </div>
 
-      {/* Savings Options */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FlexSaveCard />
         <CustomDurationCard />
       </div>
 
-      {/* Fixed Term Card - Full Width */}
       <div className="max-w-4xl mx-auto">
         <FixedTermCard />
       </div>

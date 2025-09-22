@@ -106,7 +106,7 @@ export default function SomiFinanceLanding() {
       <section className="relative mx-auto max-w-5xl px-4 pt-32 pb-20 text-center">
         <div className="space-y-8 scroll-reveal">
           <span className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/90">
-            <Wallet className="h-4 w-4" /> Built for Somnia Testnet
+            <Wallet className="h-4 w-4" /> Built for Somnia Ecosystem
           </span>
           
           <h1 className="text-balance text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">

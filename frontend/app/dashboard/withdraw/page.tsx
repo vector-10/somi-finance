@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import { useUserPositions, usePreviewInterest, usePool } from '@/hooks/usePool';
-
+import { toast } from 'sonner';
 
 interface UserPosition {
   id: bigint;
@@ -17,7 +17,6 @@ interface UserPosition {
   receiptId: bigint;
 }
 
-
 interface UserPositionsResult {
   0: UserPosition[];
   1: bigint; 
@@ -27,10 +26,27 @@ const TotalClaimableCard = () => {
   const { address } = useAccount();
   const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
-
   const userPositions = positions?.[0] || [];
-  
+  const { closePosition, isPending, isConfirming, isSuccess, error, hash } = usePool();
 
+  useEffect(() => {
+    if (isPending) {
+      toast.loading('Initiating claim all positions...', { id: 'claim-all' });
+    } else if (isConfirming) {
+      toast.loading('Confirming batch claim...', { id: 'claim-all' });
+    } else if (isSuccess) {
+      toast.success('All available positions claimed successfully!', { 
+        id: 'claim-all',
+        action: hash ? {
+          label: 'View Transaction',
+          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
+        } : undefined
+      });
+    } else if (error) {
+      toast.error(`Claim all failed: ${error.message}`, { id: 'claim-all' });
+    }
+  }, [isPending, isConfirming, isSuccess, error, hash]);
+  
   const totalClaimable = userPositions.reduce((sum, pos) => {
     if (pos.closed) return sum;
     const now = Date.now() / 1000;
@@ -59,10 +75,43 @@ const TotalClaimableCard = () => {
     return sum;
   }, 0);
 
-  const { closePosition, isPending } = usePool();
-
   const handleClaimAll = async () => {
-    console.log('Claim all functionality would iterate through claimable positions');
+    console.log('=== CLAIM ALL POSITIONS ===');
+    console.log('Total positions:', userPositions.length);
+    console.log('Total claimable amount:', totalClaimable.toFixed(4), 'STT');
+    
+    const claimablePositions = userPositions.filter(pos => {
+      if (pos.closed) return false;
+      const now = Date.now() / 1000;
+      const isMatured = pos.term > 0 && now >= pos.start + pos.term;
+      const isFlexOrCustom = pos.planType === 0 || pos.planType === 1;
+      return isMatured || isFlexOrCustom;
+    });
+
+    console.log('Claimable positions:', claimablePositions.length);
+    claimablePositions.forEach((pos, index) => {
+      console.log(`Position ${index + 1}:`, {
+        id: pos.id.toString(),
+        planType: pos.planType,
+        principal: formatEther(pos.principal),
+        aprBps: pos.aprBps
+      });
+    });
+
+    if (claimablePositions.length === 0) {
+      toast.error('No positions available to claim');
+      return;
+    }
+
+    if (totalClaimable === 0) {
+      toast.error('No claimable amount available');
+      return;
+    }
+
+    toast.info(`Starting batch claim for ${claimablePositions.length} positions worth ${totalClaimable.toFixed(4)} STT`);
+    
+    // TODO: Implement actual batch claiming logic
+    console.log('Would claim positions:', claimablePositions.map(p => p.id.toString()));
   };
 
   return (
@@ -82,10 +131,10 @@ const TotalClaimableCard = () => {
       {totalClaimable > 0 && (
         <button 
           onClick={handleClaimAll}
-          disabled={isPending}
+          disabled={isPending || isConfirming}
           className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
         >
-          {isPending ? 'Processing...' : `Claim All Available (${totalClaimable.toFixed(2)} STT)`}
+          {isPending || isConfirming ? 'Processing...' : `Claim All Available (${totalClaimable.toFixed(2)} STT)`}
         </button>
       )}
     </div>
@@ -93,8 +142,30 @@ const TotalClaimableCard = () => {
 };
 
 const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
-  const { closePosition, isPending, isConfirming, isSuccess, error } = usePool();
+  const { closePosition, isPending, isConfirming, isSuccess, error, hash } = usePool();
   const { data: interest } = usePreviewInterest(position.id);
+  
+  useEffect(() => {
+    const positionId = position.id.toString();
+    const planName = getPlanName(position.planType);
+    
+    if (isPending) {
+      toast.loading(`Processing ${planName} position withdrawal...`, { id: `position-${positionId}` });
+    } else if (isConfirming) {
+      toast.loading('Confirming transaction on blockchain...', { id: `position-${positionId}` });
+    } else if (isSuccess) {
+      const amount = getClaimableAmount().toFixed(4);
+      toast.success(`${planName} position claimed successfully! ${amount} STT withdrawn`, { 
+        id: `position-${positionId}`,
+        action: hash ? {
+          label: 'View Transaction',
+          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
+        } : undefined
+      });
+    } else if (error) {
+      toast.error(`Failed to claim ${planName} position: ${error.message}`, { id: `position-${positionId}` });
+    }
+  }, [isPending, isConfirming, isSuccess, error, hash, position.id, position.planType]);
   
   const getPlanName = (planType: number) => {
     const types = ['Flex Save', 'Custom Duration', '6 Month', '1 Year', '2 Year'];
@@ -139,12 +210,19 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
     return Math.floor(progress);
   };
 
+  const getClaimableAmount = () => {
+    const status = getStatus(position);
+    const depositAmount = parseFloat(formatEther(position.principal));
+    const earnedRewards = interest && typeof interest === 'bigint' ? parseFloat(formatEther(interest)) : 0;
+    return status === 'claimable' ? depositAmount + earnedRewards : earnedRewards;
+  };
+
   const status = getStatus(position);
   const timeRemaining = getTimeRemaining(position);
   const progress = getProgress(position);
   const depositAmount = parseFloat(formatEther(position.principal));
   const earnedRewards = interest && typeof interest === 'bigint' ? parseFloat(formatEther(interest)) : 0;
-  const claimableAmount = status === 'claimable' ? depositAmount + earnedRewards : earnedRewards;
+  const claimableAmount = getClaimableAmount();
 
   const statusConfig = {
     claimable: {
@@ -180,12 +258,62 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
   const config = statusConfig[status as keyof typeof statusConfig];
 
   const handleClaim = async () => {
-    if (status === 'locked' || status === 'claimed') return;
+    if (status === 'locked' || status === 'claimed') {
+      toast.error('This position cannot be claimed at this time');
+      return;
+    }
+    
+    console.log('=== INDIVIDUAL POSITION CLAIM ===');
+    console.log('Position ID:', position.id.toString());
+    console.log('Plan Type:', getPlanName(position.planType));
+    console.log('Status:', status);
+    console.log('Deposit Amount:', depositAmount.toFixed(4), 'STT');
+    console.log('Earned Rewards:', earnedRewards.toFixed(4), 'STT');
+    console.log('Claimable Amount:', claimableAmount.toFixed(4), 'STT');
+    console.log('Position Details:', {
+      principal: formatEther(position.principal),
+      start: new Date(position.start * 1000).toISOString(),
+      term: position.term,
+      aprBps: position.aprBps,
+      closed: position.closed
+    });
+
+    if (claimableAmount <= 0) {
+      toast.error('No amount available to claim from this position');
+      return;
+    }
+
+    toast.info(`Claiming ${claimableAmount.toFixed(4)} STT from ${getPlanName(position.planType)} position`);
     
     try {
       await closePosition(position.id);
     } catch (err) {
       console.error('Claim failed:', err);
+    }
+  };
+
+  const handleEarlyExit = async () => {
+    console.log('=== EARLY EXIT ATTEMPT ===');
+    console.log('Position ID:', position.id.toString());
+    console.log('Plan Type:', getPlanName(position.planType));
+    console.log('Principal to recover:', depositAmount.toFixed(4), 'STT');
+    console.log('Interest to forfeit:', earnedRewards.toFixed(4), 'STT');
+    
+    const confirmed = window.confirm(
+      `Early exit will forfeit all interest (${earnedRewards.toFixed(4)} STT). You'll only receive your principal (${depositAmount.toFixed(4)} STT). Continue?`
+    );
+    
+    if (!confirmed) {
+      toast.info('Early exit cancelled');
+      return;
+    }
+
+    toast.warning(`Processing early exit - forfeiting ${earnedRewards.toFixed(4)} STT interest`);
+    
+    try {
+      await closePosition(position.id);
+    } catch (err) {
+      console.error('Early exit failed:', err);
     }
   };
 
@@ -213,7 +341,6 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
           </div>
         </div>
 
-        {/* Progress Bar */}
         {position.planType !== 0 && (
           <div>
             <div className="flex justify-between text-sm text-gray-400 mb-1">
@@ -229,7 +356,6 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
           </div>
         )}
 
-        {/* Claimable Amount */}
         {(status === 'claimable' || status === 'partial') && claimableAmount > 0 && (
           <div className="bg-white/10 rounded-md p-3">
             <p className="text-sm text-gray-400">Available to Claim</p>
@@ -237,7 +363,6 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
           </div>
         )}
 
-        {/* Action Button */}
         <button 
           onClick={handleClaim}
           disabled={status === 'locked' || status === 'claimed' || isPending || isConfirming}
@@ -249,27 +374,14 @@ const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
           }
         </button>
 
-        {/* Early Exit Option for Locked Plans */}
         {status === 'locked' && (
           <button 
-            onClick={handleClaim}
+            onClick={handleEarlyExit}
             disabled={isPending || isConfirming}
             className="w-full py-2 bg-red-600/20 border border-red-600 text-red-400 rounded-md text-sm font-medium hover:bg-red-600/30 transition-colors disabled:opacity-50"
           >
             {isPending || isConfirming ? 'Processing...' : 'Early Exit (Forfeit Interest)'}
           </button>
-        )}
-
-        {error && (
-          <div className="text-red-400 text-sm mt-2">
-            Error: {error.message}
-          </div>
-        )}
-        
-        {isSuccess && (
-          <div className="text-green-400 text-sm mt-2">
-            Transaction successful! Check your dashboard.
-          </div>
         )}
       </div>
     </div>
@@ -297,6 +409,29 @@ const Page = () => {
 
   const userPositions = positions?.[0] || [];
 
+  useEffect(() => {
+    if (isConnected && address) {
+      console.log('=== WITHDRAW PAGE LOADED ===');
+      console.log('Connected Address:', address);
+      console.log('Total Positions:', userPositions.length);
+      console.log('Loading State:', isLoading);
+      
+      if (userPositions.length > 0) {
+        console.log('User Positions Summary:');
+        userPositions.forEach((pos, index) => {
+          console.log(`Position ${index + 1}:`, {
+            id: pos.id.toString(),
+            planType: pos.planType,
+            principal: formatEther(pos.principal),
+            closed: pos.closed,
+            start: new Date(pos.start * 1000).toISOString(),
+            term: pos.term
+          });
+        });
+      }
+    }
+  }, [isConnected, address, userPositions, isLoading]);
+
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -322,7 +457,6 @@ const Page = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Withdraw & Claim</h1>
         <p className="text-gray-400">Manage your active savings plans and claim available rewards</p>
@@ -330,10 +464,8 @@ const Page = () => {
 
       {userPositions.length > 0 ? (
         <>
-          {/* Summary Card */}
           <TotalClaimableCard />
 
-          {/* Savings Plans Grid */}
           <div>
             <h2 className="text-xl font-bold text-white mb-4">Your Savings Plans</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -343,7 +475,6 @@ const Page = () => {
             </div>
           </div>
 
-          {/* Help Section */}
           <div className="bg-white/5 border border-white/10 rounded-md p-6 backdrop-blur">
             <h3 className="text-lg font-semibold text-white mb-3">Withdrawal Information</h3>
             <div className="space-y-2 text-sm text-gray-300">
