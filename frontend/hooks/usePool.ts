@@ -63,8 +63,8 @@ export function usePreviewInterest(positionId: bigint) {
 
 export function useUserPositions(
   userAddress: string, 
-  cursor: bigint = 0n, 
-  size: bigint = 10n
+  cursor: bigint = BigInt(0),   
+  size: bigint = BigInt(10)    
 ) {
   return useReadContract({
     ...contracts.savingsPool,
