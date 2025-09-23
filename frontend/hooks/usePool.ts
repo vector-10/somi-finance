@@ -1,6 +1,6 @@
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther } from 'viem'
-import { contracts, PLAN_TYPES } from '../lib/contracts'
+import { contracts } from '../lib/contracts'
 
 export function usePool() {
   const { writeContract, data: hash, error, isPending } = useWriteContract()

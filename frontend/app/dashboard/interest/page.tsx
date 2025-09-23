@@ -79,19 +79,27 @@ const Page = () => {
   };
 
   const calculateInterest = () => {
-    if (!amount || !duration) return;
-
+    if (!amount) return;
+    
+    let days: number;
+    if (planType === '6m') days = 180;
+    else if (planType === '1y') days = 365;
+    else if (planType === '2y') days = 730;
+    else {
+      if (!duration) return;
+      days = convertDurationToDays(duration, durationUnit as DurationUnit);
+    }
+  
     setIsCalculating(true);
     
     setTimeout(() => {
       const principal = parseFloat(amount);
-      const days = convertDurationToDays(duration, durationUnit as DurationUnit);
       const apy = getAPY(savingsType as SavingsType, planType as PlanType, days);
       
       const totalInterest = principal * (apy / 100) * (days / 365);
       const totalAmount = principal + totalInterest;
       const dailyInterest = totalInterest / days;
-
+  
       setResults({
         principal,
         totalInterest,
@@ -101,15 +109,26 @@ const Page = () => {
         days
       });
       setIsCalculating(false);
-    }, 2000); // 2 second loader
+    }, 2000);
   };
+
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (amount && duration) {
-      calculateInterest();
-    } else {
-      setResults(null);
+    if (planType === '6m' || planType === '1y' || planType === '2y') {
+      if (amount) {
+        calculateInterest();
+      } else {
+        setResults(null);
+      }
+    }
+
+    else if (planType === 'flex' || planType === 'custom') {
+      if (amount && duration) {
+        calculateInterest();
+      } else {
+        setResults(null);
+      }
     }
   }, [amount, duration, durationUnit, savingsType, planType]);
 

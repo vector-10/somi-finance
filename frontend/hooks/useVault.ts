@@ -69,7 +69,6 @@ export function useVault() {
     }
   };
 
-  // FIXED: Remove the old joinPod function and consolidate into one
   const joinPod = async ({ podId, amountEth }: { podId: bigint; amountEth: string }) => {
     console.log("=== JOIN POD START ===");
     console.log("Pod ID:", podId);
