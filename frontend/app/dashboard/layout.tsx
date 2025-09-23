@@ -8,7 +8,8 @@ import {
   MdAccountBalanceWallet, 
   MdCallReceived, 
   MdGroups, 
-  MdCalculate 
+  MdCalculate,
+  MdReceipt
 } from 'react-icons/md';
 
 const tabs = [
@@ -35,6 +36,12 @@ const tabs = [
     href: '/dashboard/withdraw', 
     icon: MdCallReceived,
     shortName: 'Withdraw'
+  },
+  { 
+    name: 'My Receipts', 
+    href: '/dashboard/receipts', 
+    icon: MdReceipt,
+    shortName: 'Receipts'
   },
   { 
     name: 'Calculate Interest', 
@@ -85,19 +92,23 @@ function DesktopTabNavigation() {
       <nav className="flex justify-center space-x-8 px-6" aria-label="Tabs">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.name}
               href={tab.href}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-colors
+                 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-colors
                 ${isActive
                   ? 'border-purple-500 text-purple-400'
                   : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
                 }
               `}
             >
-              {tab.name}
+              <div className='flex items-center'>
+                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-purple-400' : 'text-gray-300'}`} />
+                {tab.name}
+              </div>
             </Link>
           );
         })}
