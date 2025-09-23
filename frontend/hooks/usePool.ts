@@ -167,7 +167,7 @@ export function usePool() {
   return {
     deposit,
     closePosition,
-    claimMultiplePositions, // Add this
+    claimMultiplePositions, 
     checkpoint,
     isPending,
     isConfirming,

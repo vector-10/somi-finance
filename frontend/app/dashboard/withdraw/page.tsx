@@ -37,6 +37,11 @@ const TotalClaimableCard = () => {
     error: batchError, 
     hash: batchHash 
   } = usePool();
+
+  const poolHook = usePool();
+  console.log('Pool hook contents:', poolHook);
+  console.log('claimMultiplePositions exists:', typeof poolHook.claimMultiplePositions);
+
   
   const [batchProgress, setBatchProgress] = useState({ 
     current: 0, 
