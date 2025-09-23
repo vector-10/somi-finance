@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import { useUserPositions, usePreviewInterest, usePool } from '@/hooks/usePool';
@@ -22,31 +22,30 @@ interface UserPositionsResult {
   1: bigint; 
 }
 
+
 const TotalClaimableCard = () => {
   const { address } = useAccount();
   const { data: rawPositions } = useUserPositions(address || '', BigInt(0), BigInt(50));
   const positions = rawPositions as UserPositionsResult | undefined;
   const userPositions = positions?.[0] || [];
-  const { isPending, isConfirming, isSuccess, error, hash } = usePool();
-
-  useEffect(() => {
-    if (isPending) {
-      toast.loading('Initiating claim all positions...', { id: 'claim-all' });
-    } else if (isConfirming) {
-      toast.loading('Confirming batch claim...', { id: 'claim-all' });
-    } else if (isSuccess) {
-      toast.success('All available positions claimed successfully!', { 
-        id: 'claim-all',
-        action: hash ? {
-          label: 'View Transaction',
-          onClick: () => window.open(`https://explorer.somnia.network/tx/${hash}`, '_blank')
-        } : undefined
-      });
-    } else if (error) {
-      toast.error(`Claim all failed: ${error.message}`, { id: 'claim-all' });
-    }
-  }, [isPending, isConfirming, isSuccess, error, hash]);
   
+  const { 
+    claimMultiplePositions, 
+    isPending: isBatchPending, 
+    isConfirming: isBatchConfirming, 
+    isSuccess: isBatchSuccess, 
+    error: batchError, 
+    hash: batchHash 
+  } = usePool();
+  
+  const [batchProgress, setBatchProgress] = useState({ 
+    current: 0, 
+    total: 0, 
+    isActive: false,
+    currentPositionId: ''
+  });
+
+
   const totalClaimable = userPositions.reduce((sum, pos) => {
     if (pos.closed) return sum;
     const now = Date.now() / 1000;
@@ -76,9 +75,7 @@ const TotalClaimableCard = () => {
   }, 0);
 
   const handleClaimAll = async () => {
-    console.log('=== CLAIM ALL POSITIONS ===');
-    console.log('Total positions:', userPositions.length);
-    console.log('Total claimable amount:', totalClaimable.toFixed(4), 'STT');
+    console.log('=== BATCH CLAIM ALL POSITIONS ===');
     
     const claimablePositions = userPositions.filter(pos => {
       if (pos.closed) return false;
@@ -88,30 +85,47 @@ const TotalClaimableCard = () => {
       return isMatured || isFlexOrCustom;
     });
 
-    console.log('Claimable positions:', claimablePositions.length);
-    claimablePositions.forEach((pos, index) => {
-      console.log(`Position ${index + 1}:`, {
-        id: pos.id.toString(),
-        planType: pos.planType,
-        principal: formatEther(pos.principal),
-        aprBps: pos.aprBps
-      });
-    });
-
     if (claimablePositions.length === 0) {
       toast.error('No positions available to claim');
       return;
     }
 
-    if (totalClaimable === 0) {
-      toast.error('No claimable amount available');
-      return;
-    }
-
-    toast.info(`Starting batch claim for ${claimablePositions.length} positions worth ${totalClaimable.toFixed(4)} STT`);
+    const positionIds = claimablePositions.map(pos => pos.id);
+    console.log(`Starting batch claim for ${positionIds.length} positions:`, positionIds.map(id => id.toString()));
     
-    // TODO: Implement actual batch claiming logic
-    console.log('Would claim positions:', claimablePositions.map(p => p.id.toString()));
+    setBatchProgress({ 
+      current: 0, 
+      total: positionIds.length, 
+      isActive: true,
+      currentPositionId: ''
+    });
+    
+    toast.info(`Starting batch claim for ${positionIds.length} positions worth ${totalClaimable.toFixed(4)} STT`);
+
+    try {
+      // Use the batch function with progress tracking
+      const results = await claimMultiplePositions(positionIds);
+      
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      
+      setBatchProgress({ current: 0, total: 0, isActive: false, currentPositionId: '' });
+      
+      if (successful === results.length) {
+        toast.success(`All ${successful} positions claimed successfully! Total: ${totalClaimable.toFixed(4)} STT`, {
+          duration: 5000
+        });
+      } else {
+        toast.warning(`Batch completed: ${successful} successful, ${failed} failed. Check individual results.`, {
+          duration: 5000
+        });
+      }
+      
+    } catch (error) {
+      console.error('Batch claim failed:', error);
+      setBatchProgress({ current: 0, total: 0, isActive: false, currentPositionId: '' });
+      toast.error('Batch claim process failed. Please try individual claims.');
+    }
   };
 
   return (
@@ -129,17 +143,42 @@ const TotalClaimableCard = () => {
       </div>
       
       {totalClaimable > 0 && (
-        <button 
-          onClick={handleClaimAll}
-          disabled={isPending || isConfirming}
-          className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
-        >
-          {isPending || isConfirming ? 'Processing...' : `Claim All Available (${totalClaimable.toFixed(2)} STT)`}
-        </button>
+        <>
+          <button 
+            onClick={handleClaimAll}
+            disabled={batchProgress.isActive || isBatchPending || isBatchConfirming}
+            className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors disabled:opacity-50"
+          >
+            {batchProgress.isActive 
+              ? `Processing ${batchProgress.current}/${batchProgress.total}...`
+              : isBatchPending || isBatchConfirming 
+                ? 'Processing...' 
+                : `Claim All Available (${totalClaimable.toFixed(2)} STT)`
+            }
+          </button>
+          
+          {batchProgress.isActive && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-green-500 h-3 rounded-full transition-all duration-500" 
+                  style={{width: `${(batchProgress.current / batchProgress.total) * 100}%`}}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-400 mt-2 text-center">
+                Processing position {batchProgress.current} of {batchProgress.total}
+              </p>
+              <p className="text-xs text-gray-500 text-center">
+                Each position requires blockchain confirmation (~2-3 seconds)
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
+
 
 const SavingsPlanCard = ({ position }: { position: UserPosition }) => {
   const { closePosition, isPending, isConfirming, isSuccess, error, hash } = usePool();
