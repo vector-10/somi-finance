@@ -7,76 +7,68 @@ import {ReentrancyGuard} from "openzeppelin-contracts/utils/ReentrancyGuard.sol"
 import {SavingsReceipt1155} from "./SavingsReceipt1155.sol";
 import {InterestCalculator} from "./InterestCalculator.sol";
 
-/// @title PodsVaultV2 — Social savings pods with public/private discovery and flex/fixed plans
-/// @notice Native STT only (payable). Principal held in vault; interest paid by Treasury.
+
 contract PodsVault is Ownable, Pausable, ReentrancyGuard {
     using InterestCalculator for uint256;
 
-    // ---------- Time & APY config ----------
+
     uint48 private constant MAX_CUSTOM = 150 days;
     uint48 private constant SIX_MONTHS = 180 days;
     uint48 private constant ONE_YEAR   = 365 days;
     uint48 private constant TWO_YEARS  = 730 days;
 
-    // APY (basis points) for PODS (higher than solo)
-    uint16 private constant APY_FLEX    = 1200; // 12%
-    uint16 private constant APY_CUSTOM  = 1500; // 15% (≤150 days)
-    uint16 private constant APY_6M      = 2000; // 20%
-    uint16 private constant APY_1Y      = 2500; // 25%
-    uint16 private constant APY_2Y      = 5000; // 50%
+
+    uint16 private constant APY_FLEX    = 1200; 
+    uint16 private constant APY_CUSTOM  = 1500; 
+    uint16 private constant APY_6M      = 2000; 
+    uint16 private constant APY_1Y      = 2500; 
+    uint16 private constant APY_2Y      = 5000; 
 
     uint32 private constant MIN_MEMBERS_TO_ACTIVATE = 3;
 
     enum PlanType { FLEX, CUSTOM_DAYS, FIXED_6M, FIXED_1Y, FIXED_2Y }
 
-    // ---------- Storage ----------
     uint256 public nextPodId;
-    uint256 private _nonce; // for deterministic-ish receiptIds
+    uint256 private _nonce; 
 
     struct Pod {
-        // identity
         address creator;
         string  name;
         string  description;
         bool    isPublic;
 
-        // economics
-        uint8   planType;           // PlanType enum
-        uint16  aprBps;             // locked at creation
-        uint48  term;               // seconds; 0 for FLEX
-        uint128 contributionAmount; // per-member
+        uint8   planType;           
+        uint16  aprBps;            
+        uint48  term;               
+        uint128 contributionAmount; 
 
-        // lifecycle
         bool    activated;
         bool    cancelled;
-        uint48  startTime;          // set at activation
-        uint48  maturityTime;       // startTime + term (if term > 0)
+        uint48  startTime;          
+        uint48  maturityTime;      
 
-        // accounting
-        uint32  membersJoined;      // total joined
-        uint32  activeMembers;      // not yet closed
-        uint128 totalDeposited;     // sum of contributions
+        uint32  membersJoined;    
+        uint32  activeMembers;      
+        uint128 totalDeposited;     
     }
 
     struct Member {
         bool    joined;
-        bool    closed;             // true after any leave/claim/refund
+        bool    closed;             
         uint48  joinedAt;
         uint256 receiptId;
     }
 
-    mapping(uint256 => Pod) public pods;                                // podId => Pod
-    mapping(uint256 => mapping(address => Member)) public member;       // podId => user => Member
-    mapping(uint256 => address[]) public podMembers;                    // for UX/debug (bounded by user base)
+    mapping(uint256 => Pod) public pods;                                
+    mapping(uint256 => mapping(address => Member)) public member;       
+    mapping(uint256 => address[]) public podMembers;                    
 
-    // Public discovery index
-    uint256[] public publicPodIds;                                      // dense list of public pods
-    mapping(uint256 => uint256) public publicIndex;                     // podId => index in publicPodIds (+1 sentinel)
+    uint256[] public publicPodIds;                                      
+    mapping(uint256 => uint256) public publicIndex;                     
 
     SavingsReceipt1155 public receipt;
-    address public treasury; // MockTreasury
+    address public treasury; 
 
-    // ---------- Events ----------
     event TreasurySet(address indexed newTreasury);
 
     event PodCreated(
@@ -97,7 +89,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     event PodActivated(uint256 indexed podId, uint48 startTime, uint48 maturityTime);
 
-    /// @notice Emitted when a member leaves (covers flex withdraws, fixed claims, and pre-activation refunds)
     event MemberLeft(
         uint256 indexed podId,
         address indexed user,
@@ -108,7 +99,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     event PodCancelled(uint256 indexed podId);
 
-    // ---------- Constructor ----------
     constructor(address _receipt, address _treasury) {
         require(_receipt != address(0) && _treasury != address(0), "ZERO_ADDR");
         receipt = SavingsReceipt1155(_receipt);
@@ -117,7 +107,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
     receive() external payable {}
 
-    // ---------- Admin ----------
     function setTreasury(address t) external onlyOwner {
         require(t != address(0), "ZERO_ADDR");
         treasury = t;
@@ -127,14 +116,13 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
 
-    // ---------- Create & manage pods ----------
     function createPod(
         string calldata name,
         string calldata description,
         bool isPublic,
         uint128 contributionAmount,
-        uint8 planType,         // 0..4
-        uint48 customDays       // used only when planType == CUSTOM_DAYS
+        uint8 planType,       
+        uint48 customDays    
     )
         external
         whenNotPaused
@@ -156,10 +144,9 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         p.term = term;
         p.contributionAmount = contributionAmount;
 
-        // discovery index
         if (isPublic) {
             publicPodIds.push(podId);
-            publicIndex[podId] = publicPodIds.length; // 1-based index
+            publicIndex[podId] = publicPodIds.length; 
         }
 
         emit PodCreated(podId, msg.sender, isPublic, planType, aprBps, term, contributionAmount, name);
@@ -170,7 +157,6 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         require(p.creator == msg.sender, "NOT_CREATOR");
         require(!p.activated && !p.cancelled, "LOCKED");
 
-        // already same?
         if (p.isPublic == isPublic_) {
             emit PodVisibilityChanged(podId, isPublic_);
             return;
@@ -178,11 +164,11 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
         p.isPublic = isPublic_;
         if (isPublic_) {
-            // add
+
             publicPodIds.push(podId);
-            publicIndex[podId] = publicPodIds.length; // 1-based
+            publicIndex[podId] = publicPodIds.length;
         } else {
-            // remove via swap-and-pop
+
             uint256 idx1 = publicIndex[podId];
             if (idx1 != 0) {
                 uint256 idx = idx1 - 1;
@@ -213,20 +199,16 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         emit PodCancelled(podId);
     }
 
-    // ---------- Join & leave ----------
 
-    /// @notice Join a pod before it activates by sending exactly the contribution amount.
-    ///         Activation happens automatically when members >= 3.
     function joinPod(uint256 podId) external payable whenNotPaused nonReentrant {
         Pod storage p = pods[podId];
         require(!p.cancelled, "CANCELLED");
-        require(!p.activated, "ALREADY_ACTIVE"); // no late joins in V2
+        require(!p.activated, "ALREADY_ACTIVE"); 
         require(msg.value == p.contributionAmount, "AMOUNT_MISMATCH");
 
         Member storage m = member[podId][msg.sender];
         require(!m.joined && !m.closed, "ALREADY_MEMBER");
 
-        // state
         m.joined = true;
         m.joinedAt = uint48(block.timestamp);
         uint256 rid = _mintReceipt(podId, msg.sender);
@@ -238,18 +220,13 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
 
         emit MemberJoined(podId, msg.sender, rid);
 
-        // auto-activate if threshold reached
+
         if (p.membersJoined >= MIN_MEMBERS_TO_ACTIVATE) {
             _activate(podId, p);
         }
     }
 
-    /// @notice Leave the pod and withdraw your funds.
-    /// - If not activated/cancelled: 100% principal refund.
-    /// - If activated:
-    ///     FLEX: principal + accrued interest (from activation).
-    ///     CUSTOM: principal + accrued interest capped by term.
-    ///     FIXED: principal only before maturity; principal + full interest at/after maturity.
+
     function leavePod(uint256 podId) external whenNotPaused nonReentrant {
         Pod storage p = pods[podId];
         Member storage m = member[podId][msg.sender];
@@ -260,51 +237,41 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         bool matured;
 
         if (!p.activated || p.cancelled) {
-            // full refund before activation/cancelled state
             m.closed = true;
             if (p.activeMembers > 0) p.activeMembers -= 1;
 
             (bool ok, ) = msg.sender.call{value: principal}("");
             require(ok, "REFUND_FAIL");
 
-            // upgrade to Gold (completed lifecycle)
             receipt.upgradeTier(m.receiptId, SavingsReceipt1155.Tier.Gold);
 
             emit MemberLeft(podId, msg.sender, principal, 0, false);
             return;
         }
 
-        // Activated path
         (interest, matured) = _computeInterestForMember(p);
 
-        // Early-exit rule for FIXED plans: zero interest before maturity
         if (_isFixed(p.planType) && !matured) {
             interest = 0;
         }
 
-        // mark closed BEFORE external calls
         m.closed = true;
         if (p.activeMembers > 0) p.activeMembers -= 1;
 
-        // pay principal from vault
         (bool ok1, ) = msg.sender.call{value: principal}("");
         require(ok1, "PRINCIPAL_SEND_FAIL");
 
-        // pay interest from treasury if any
         if (interest > 0) {
             (bool ok2, ) = treasury.call(abi.encodeWithSignature("payOut(address,uint256)", msg.sender, interest));
             require(ok2, "TREASURY_CALL_FAIL");
         }
 
-        // Upgrade to Gold
         receipt.upgradeTier(m.receiptId, SavingsReceipt1155.Tier.Gold);
 
         emit MemberLeft(podId, msg.sender, principal, interest, matured);
     }
 
-    // ---------- Views ----------
 
-    /// @notice Returns summarized details for a pod (UI-friendly).
     function getPodDetails(uint256 podId)
         external
         view
@@ -344,7 +311,7 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         totalDeposited = p.totalDeposited;
     }
 
-    /// @notice Paged list of public pods for discovery.
+
     function getPublicPods(uint256 cursor, uint256 size)
         external
         view
@@ -391,13 +358,12 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         nextCursor = end;
     }
 
-    /// @notice Member count (joined & active) for a pod.
     function getPodMemberCount(uint256 podId) external view returns (uint32 membersJoined, uint32 activeMembers) {
         Pod storage p = pods[podId];
         return (p.membersJoined, p.activeMembers);
     }
 
-    /// @notice Preview the member's current interest (0 if pre-activation or fixed pre-maturity).
+
     function previewMemberInterest(uint256 podId, address user) external view returns (uint256) {
         Pod storage p = pods[podId];
         Member storage m = member[podId][user];
@@ -408,13 +374,13 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         return interest;
     }
 
-    /// @notice Optional milestone: upgrade receipt to Silver when ≥50% of term elapsed (term pods only).
+
     function checkpoint(uint256 podId) external {
         Pod storage p = pods[podId];
         require(p.activated && !p.cancelled, "BAD_STATE");
-        require(p.term > 0, "NO_TERM"); // flex has no term
+        require(p.term > 0, "NO_TERM"); 
         require(block.timestamp >= p.startTime + (p.term / 2), "NOT_HALF");
-        // Anyone can call; upgrades are idempotent in the ERC-1155 impl
+
         address[] storage members = podMembers[podId];
         for (uint256 i = 0; i < members.length; i++) {
             Member storage m = member[podId][members[i]];
@@ -424,10 +390,9 @@ contract PodsVault is Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    // ---------- Internals ----------
 
     function _mintReceipt(uint256 podId, address user) private returns (uint256 rid) {
-        // unique-ish id; safe for testnet receipt semantics
+
         rid = uint256(keccak256(abi.encodePacked(address(this), user, podId, block.timestamp, ++_nonce)));
         member[podId][user].receiptId = rid;
         receipt.mint(user, rid, SavingsReceipt1155.Tier.Bronze);

@@ -3,8 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
-/// @title MockTreasury (native STT)
-/// @notice Holds native STT to pay yields/bonuses; principal stays in Pool/Vault
+
 contract MockTreasury is Ownable {
     error NotAuthorized();
 
@@ -21,7 +20,6 @@ contract MockTreasury is Ownable {
         emit PayerSet(payer, allowed);
     }
 
-    /// @notice Pays native coin to `to` (callers: SavingsPool/PodsVault)
     function payOut(address to, uint256 amount) external {
         if (!isPayer[msg.sender]) revert NotAuthorized();
         (bool ok, ) = to.call{value: amount}("");

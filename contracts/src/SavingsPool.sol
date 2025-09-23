@@ -11,13 +11,11 @@ import {InterestCalculator} from "./InterestCalculator.sol";
 contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
     using InterestCalculator for uint256;
 
-    // ---------- Config ----------
     uint48 private constant SIX_MONTHS = 180 days;
     uint48 private constant ONE_YEAR   = 365 days;
     uint48 private constant TWO_YEARS  = 730 days;
     uint48 private constant MAX_CUSTOM = 150 days;
 
-    // APY (basis points) for SOLO
     uint16 private constant APY_FLEX    = 1000;
     uint16 private constant APY_CUSTOM  = 1200;
     uint16 private constant APY_6M      = 1800; 
@@ -29,27 +27,24 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
     struct Position {
         address owner;
         uint128 principal;
-        uint48  start;      // timestamp
-        uint48  term;       // seconds; 0 for FLEX
-        uint16  aprBps;     // locked at open for stability
-        uint8   planType;   // PlanType
+        uint48  start;     
+        uint48  term;      
+        uint16  aprBps;  
+        uint8   planType;  
         bool    closed;
-        uint256 receiptId;  // ERC1155 tokenId (equals positionId)
+        uint256 receiptId;  
     }
 
-    // positions
     uint256 public nextPositionId;
-    mapping(uint256 => Position) public positions;             // positionId => Position
-    mapping(address => uint256[]) private _userPositions;      // user => positionIds
+    mapping(uint256 => Position) public positions;             
+    mapping(address => uint256[]) private _userPositions;      
 
-    // admin toggles per plan
-    mapping(uint8 => bool) public planActive; // PlanType => active?
+    mapping(uint8 => bool) public planActive; 
 
     SavingsReceipt1155 public receipt;
-    address public treasury; // MockTreasury
+    address public treasury; 
     event TreasurySet(address indexed newTreasury);
 
-    // ---------- Events ----------
     event PositionOpened(
         address indexed user,
         uint256 indexed positionId,
@@ -68,13 +63,13 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
         bool    matured
     );
 
-    // ---------- Constructor ----------
+
     constructor(address _receipt, address _treasury) {
         require(_receipt != address(0) && _treasury != address(0), "ZERO_ADDR");
         receipt = SavingsReceipt1155(_receipt);
         treasury = _treasury;
 
-        // enable all plans by default
+ 
         planActive[uint8(PlanType.FLEX)]       = true;
         planActive[uint8(PlanType.CUSTOM_DAYS)] = true;
         planActive[uint8(PlanType.FIXED_6M)]   = true;
@@ -84,7 +79,6 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
 
     receive() external payable {}
 
-    // ---------- Admin ----------
     function setTreasury(address t) external onlyOwner {
         require(t != address(0), "ZERO_ADDR");
         treasury = t;
@@ -99,10 +93,6 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
 
-    // ---------- User: Open position ----------
-    /// @notice Open a new savings position. Send native STT as msg.value.
-    /// @param planType 0=FLEX,1=CUSTOM,2=6M,3=1Y,4=2Y
-    /// @param customDays only for CUSTOM; 1..150 (ignored otherwise)
     function deposit(uint8 planType, uint48 customDays)
         external
         payable
@@ -126,22 +116,17 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
             aprBps:    aprBps,
             planType:  planType,
             closed:    false,
-            receiptId: positionId // 1:1 mapping: tokenId == positionId
+            receiptId: positionId
         });
 
         _userPositions[msg.sender].push(positionId);
 
-        // Mint Bronze receipt
         receipt.mint(msg.sender, positionId, SavingsReceipt1155.Tier.Bronze);
 
         emit PositionOpened(msg.sender, positionId, planType, msg.value, term, aprBps, positionId);
     }
 
-    // ---------- User: Close / withdraw ----------
-    /// @notice Close a position and withdraw funds.
-    ///         FLEX/CUSTOM: principal + accrued interest (anytime).
-    ///         FIXED pre-maturity: principal only (interest forfeited).
-    ///         FIXED at/after maturity: principal + full-term interest.
+
     function closePosition(uint256 positionId) external nonReentrant {
         Position storage p = positions[positionId];
         require(p.owner == msg.sender, "NOT_OWNER");
@@ -149,28 +134,25 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
 
         (uint256 interest, bool matured) = _computeInterestState(p);
 
-        // mark closed BEFORE external calls
+
         p.closed = true;
 
-        // Principal from pool
+
         (bool ok1, ) = msg.sender.call{value: p.principal}("");
         require(ok1, "PRINCIPAL_SEND_FAIL");
 
-        // Interest from treasury if any
+
         if (interest > 0) {
             (bool ok2, ) = treasury.call(abi.encodeWithSignature("payOut(address,uint256)", msg.sender, interest));
             require(ok2, "TREASURY_CALL_FAIL");
         }
 
-        // Upgrade to Gold on successful close
         receipt.upgradeTier(p.receiptId, SavingsReceipt1155.Tier.Gold);
 
         emit PositionClosed(msg.sender, positionId, p.principal, interest, matured);
     }
 
-    // ---------- Views ----------
-    /// @notice Preview interest for a position at current block timestamp.
-    ///         FLEX: real-time accrual; CUSTOM: accrual capped by term; FIXED: 0 before, full after maturity.
+
     function previewInterest(uint256 positionId) external view returns (uint256) {
         Position memory p = positions[positionId];
         require(p.owner != address(0), "NO_POSITION");
@@ -178,7 +160,7 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
         return interest;
     }
 
-    /// @notice Paginated list of user's positions (for UI). Returns items and nextCursor.
+
     function getUserPositionsPaginated(address user, uint256 cursor, uint256 size)
         external
         view
@@ -212,17 +194,16 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
         nextCursor = end;
     }
 
-    /// @notice Optional milestone: upgrade receipt to Silver when >= 50% of term elapsed (for CUSTOM/FIXED only).
+
     function checkpoint(uint256 positionId) external {
         Position storage p = positions[positionId];
         require(p.owner != address(0), "NO_POSITION");
         require(!p.closed, "CLOSED");
-        require(p.term > 0, "NO_TERM"); // FLEX has no term
+        require(p.term > 0, "NO_TERM"); 
         require(block.timestamp >= p.start + (p.term / 2), "NOT_HALF");
         receipt.upgradeTier(p.receiptId, SavingsReceipt1155.Tier.Silver);
     }
 
-    // ---------- Types for views ----------
     struct PositionView {
         uint256 id;
         uint8   planType;
@@ -234,7 +215,7 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
         uint256 receiptId;
     }
 
-    // ---------- Internals ----------
+
     function _deriveTermsAndApr(uint8 planType, uint48 customDays)
         internal
         pure
@@ -262,7 +243,6 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
     }
 
     function _computeInterestState(Position storage p) internal view returns (uint256 interest, bool matured) {
-        // matured used only for event clarity / UI
         if (p.planType == uint8(PlanType.FLEX)) {
             uint256 elapsed = block.timestamp - p.start;
             interest = uint256(p.principal).simple(APY_FLEX, elapsed);
@@ -272,7 +252,7 @@ contract SavingsPool is Ownable, Pausable, ReentrancyGuard {
             if (elapsed > p.term) { elapsed = p.term; matured = true; } else { matured = false; }
             interest = uint256(p.principal).simple(APY_CUSTOM, elapsed);
         } else {
-            // FIXED plans: no interest before maturity; full interest at/after
+
             matured = (block.timestamp >= p.start + p.term);
             if (matured) {
                 interest = uint256(p.principal).simple(p.aprBps, p.term);
