@@ -111,7 +111,6 @@ export function usePool() {
     })
   }
 
-  // Add this new batch function
   const claimMultiplePositions = async (positionIds: bigint[]) => {
     const results = [];
     
@@ -137,7 +136,7 @@ export function usePool() {
         
         console.log(`Position ${positionId.toString()} claimed successfully`);
         
-        // Delay between transactions
+
         if (i < positionIds.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -149,7 +148,7 @@ export function usePool() {
           success: false, 
           error 
         });
-        // Continue with next position even if this one fails
+      
       }
     }
     
@@ -177,7 +176,7 @@ export function usePool() {
   }
 }
 
-// Keep your existing functions unchanged
+
 export function usePreviewInterest(positionId: bigint) {
   return useReadContract({
     ...contracts.savingsPool,
