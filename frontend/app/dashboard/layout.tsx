@@ -17,37 +17,43 @@ const tabs = [
     name: 'Dashboard', 
     href: '/dashboard', 
     icon: MdDashboard,
-    shortName: 'Home'
+    shortName: 'Home',
+    mobileVisible: true
   },
   { 
     name: 'Solo Savings', 
     href: '/dashboard/deposit', 
     icon: MdAccountBalanceWallet,
-    shortName: 'Deposit'
+    shortName: 'Deposit',
+    mobileVisible: true
   },
   { 
     name: 'Savings Pods', 
     href: '/dashboard/pods', 
     icon: MdGroups,
-    shortName: 'Pods'
+    shortName: 'Pods',
+    mobileVisible: true
   },
   { 
     name: 'Withdraw', 
     href: '/dashboard/withdraw', 
     icon: MdCallReceived,
-    shortName: 'Withdraw'
+    shortName: 'Withdraw',
+    mobileVisible: true
   },
   { 
     name: 'My Receipts', 
     href: '/dashboard/receipts', 
     icon: MdReceipt,
-    shortName: 'Receipts'
+    shortName: 'Receipts',
+    mobileVisible: false 
   },
   { 
     name: 'Calculate Interest', 
     href: '/dashboard/interest', 
     icon: MdCalculate,
-    shortName: 'Calculator'
+    shortName: 'Calculator',
+    mobileVisible: true
   },
 ];
 
@@ -119,11 +125,12 @@ function DesktopTabNavigation() {
 
 function MobileBottomNavigation() {
   const pathname = usePathname();
+  const mobileTabs = tabs.filter(tab => tab.mobileVisible);
   
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/5 backdrop-blur border-t border-white/10">
       <nav className="flex justify-around items-center py-2">
-        {tabs.map((tab) => {
+        {mobileTabs.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
           
